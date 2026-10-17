@@ -1,0 +1,328 @@
+import { DiagnosticQuestion } from '../types/pedagogy';
+
+export const DIAGNOSTIC_QUESTIONS: DiagnosticQuestion[] = [
+  {
+    id: 'DIAG_01',
+    domain: 'Comptabilité',
+    competencyCode: 'COMPT-01',
+    question: "Dans l'équation fondamentale du bilan comptable (SYSCOHADA), quelle relation est toujours strictement vérifiée ?",
+    context: "Fondements comptables généraux",
+    options: [
+      {
+        id: 'A',
+        text: 'Actif = Passif + Capitaux Propres',
+        isCorrect: true,
+        explanation: "Correct ! L'actif (les emplois et biens possédés) est intégralement financé par les ressources (dettes envers les tiers et capitaux apportés par les associés).",
+      },
+      {
+        id: 'B',
+        text: 'Actif = Dettes Fournisseurs - Trésorerie',
+        isCorrect: false,
+        explanation: 'Faux. Cette relation ne respecte pas les grands équilibres bilanciels.',
+      },
+      {
+        id: 'C',
+        text: 'Capitaux Propres = Chiffre d\'Affaires - Dettes',
+        isCorrect: false,
+        explanation: 'Faux. Ne confondez pas le chiffre d\'affaires (flux de vente) et les capitaux propres (ressources de patrimoine stables).',
+      },
+    ],
+  },
+  {
+    id: 'DIAG_02',
+    domain: 'Comptabilité',
+    competencyCode: 'COMPT-02',
+    question: "Lorsqu'une entreprise règle une dette fournisseur de 2 000 000 FCFA par virement bancaire, quelle est l'écriture exacte ?",
+    context: "Règlement d'exploitation",
+    options: [
+      {
+        id: 'A',
+        text: 'Débit du compte 4011 (Fournisseurs) et Crédit du compte 5211 (Banque)',
+        isCorrect: true,
+        explanation: 'Exact ! Le compte de passif 4011 diminue par son débit, et l\'actif de trésorerie 5211 diminue par son crédit.',
+      },
+      {
+        id: 'B',
+        text: 'Débit du compte 5211 (Banque) et Crédit du compte 4011 (Fournisseurs)',
+        isCorrect: false,
+        explanation: 'Erreur fréquente d\'inversion ! Créditer le compte 5211 correspond à une sortie d\'argent de la banque.',
+      },
+      {
+        id: 'C',
+        text: 'Débit du compte 6011 (Achats) et Crédit du compte 4011 (Fournisseurs)',
+        isCorrect: false,
+        explanation: 'Faux. Cette écriture correspond à l\'achat initial de marchandises, pas à son paiement.',
+      },
+    ],
+  },
+  {
+    id: 'DIAG_03',
+    domain: 'Excel',
+    competencyCode: 'EXCEL-01',
+    question: "Dans une formule Excel, que permet d'obtenir la référence '$B$1' lors d'une recopie vers le bas ?",
+    context: "Modélisation de feuilles de calcul",
+    options: [
+      {
+        id: 'A',
+        text: 'La référence reste strictement figée sur la cellule B1',
+        isCorrect: true,
+        explanation: 'Parfait ! Le symbole $ devant la colonne (B) et la ligne (1) crée une référence absolue immuable lors du déplacement.',
+      },
+      {
+        id: 'B',
+        text: 'La ligne s\'incrémente (B2, B3, B4...) mais la colonne reste B',
+        isCorrect: false,
+        explanation: 'Faux. Pour que la ligne s\'incrémente, il faudrait écrire $B1 (référence mixte).',
+      },
+      {
+        id: 'C',
+        text: 'La formule affiche une erreur #REF!',
+        isCorrect: false,
+        explanation: 'Non, les dollars n\'engendrent aucune erreur, ils contrôlent le déplacement.',
+      },
+    ],
+  },
+  {
+    id: 'DIAG_04',
+    domain: 'Excel',
+    competencyCode: 'EXCEL-03',
+    question: "Quelle fonction moderne remplace avantageusement RECHERCHEV et INDEX/EQUIV pour extraire une valeur associée sans exiger que la clé soit dans la 1ère colonne ?",
+    context: "Recherche et extraction de données",
+    options: [
+      {
+        id: 'A',
+        text: 'RECHERCHEX (XLOOKUP)',
+        isCorrect: true,
+        explanation: 'Exact ! RECHERCHEX permet une recherche multidirectionnelle (vers la gauche ou la droite) et gère nativement la valeur en cas d\'absence.',
+      },
+      {
+        id: 'B',
+        text: 'SOMME.SI.ENS',
+        isCorrect: false,
+        explanation: 'Non, SOMME.SI.ENS additionne des valeurs numériques sous conditions, elle ne renvoie pas un libellé textuel.',
+      },
+      {
+        id: 'C',
+        text: 'CONCATENER',
+        isCorrect: false,
+        explanation: 'Non, CONCATENER assemble des chaînes de texte.',
+      },
+    ],
+  },
+  {
+    id: 'DIAG_05',
+    domain: 'Analyse Financière',
+    competencyCode: 'ANAL-02',
+    question: "Comment s'interprète un ratio de liquidité générale égal à 0.75 ?",
+    context: "Diagnostic de solvabilité à court terme",
+    options: [
+      {
+        id: 'A',
+        text: 'L\'entreprise dispose de 75 FCFA d\'actifs à court terme pour 100 FCFA de dettes exigibles (tension de liquidité)',
+        isCorrect: true,
+        explanation: 'Correct ! Un ratio inférieur à 1 signale que la réalisation des actifs circulants ne suffit pas à couvrir les dettes à court terme.',
+      },
+      {
+        id: 'B',
+        text: 'L\'entreprise est en excellente santé et ses actionnaires sont très rentables',
+        isCorrect: false,
+        explanation: 'Faux. Un ratio inférieur à 1 est au contraire un signal d\'alerte de trésorerie.',
+      },
+      {
+        id: 'C',
+        text: 'La rentabilité commerciale est de 75%',
+        isCorrect: false,
+        explanation: 'Confusion totale entre la liquidité (remboursement des dettes) et la marge commerciale.',
+      },
+    ],
+  },
+  {
+    id: 'DIAG_06',
+    domain: 'Analyse Financière',
+    competencyCode: 'ANAL-03',
+    question: "Si une entreprise accorde 60 jours de crédit à ses clients mais ne bénéficie que de 30 jours de la part de ses fournisseurs, que se passe-t-il pour son BFR ?",
+    context: "Cycle d'exploitation et cash",
+    options: [
+      {
+        id: 'A',
+        text: 'Le Besoin en Fonds de Roulement (BFR) augmente fortement et consomme de la trésorerie',
+        isCorrect: true,
+        explanation: 'Très bien ! L\'entreprise finance ses clients plus longtemps qu\'elle n\'est financée par ses fournisseurs, ce qui creuse son besoin de trésorerie.',
+      },
+      {
+        id: 'B',
+        text: 'Le BFR devient négatif et génère un surplus de trésorerie',
+        isCorrect: false,
+        explanation: 'Faux, c\'est l\'inverse : un BFR négatif survient lorsque les clients paient comptant et les fournisseurs à 60 jours.',
+      },
+      {
+        id: 'C',
+        text: 'Le chiffre d\'affaires diminue de 30 jours',
+        isCorrect: false,
+        explanation: 'Non, le délai de crédit client ne modifie pas le montant comptable des ventes mais uniquement leur encaissement.',
+      },
+    ],
+  },
+  {
+    id: 'DIAG_07',
+    domain: 'Contrôle de Gestion',
+    competencyCode: 'GEST-02',
+    question: "Une entreprise réalise un CA de 100M FCFA avec 60M FCFA de charges variables et 30M FCFA de charges fixes. Quel est son seuil de rentabilité ?",
+    context: "Calcul du point mort",
+    options: [
+      {
+        id: 'A',
+        text: '75 000 000 FCFA',
+        isCorrect: true,
+        explanation: 'Calcul parfait : Marge sur coût variable = 100M - 60M = 40M. Taux MCV = 40M / 100M = 40%. Seuil de rentabilité = Charges Fixes / Taux MCV = 30M / 0.4 = 75 000 000 FCFA.',
+      },
+      {
+        id: 'B',
+        text: '90 000 000 FCFA',
+        isCorrect: false,
+        explanation: 'Faux. 90M correspond aux coûts totaux (60M + 30M), pas au seuil de rentabilité.',
+      },
+      {
+        id: 'C',
+        text: '50 000 000 FCFA',
+        isCorrect: false,
+        explanation: 'Faux. Le calcul doit diviser les charges fixes par le taux de marge sur coût variable.',
+      },
+    ],
+  },
+  {
+    id: 'DIAG_08',
+    domain: 'Finance d\'Entreprise',
+    competencyCode: 'FIN-03',
+    question: "Pour un projet d'investissement avec un taux d'actualisation de 10%, si la VAN calculée est de +12 000 000 FCFA, quelle est la conclusion financière ?",
+    context: "Décision d'investissement",
+    options: [
+      {
+        id: 'A',
+        text: 'Le projet est rentable : il rémunère le capital à plus de 10% et crée 12M FCFA de valeur nette',
+        isCorrect: true,
+        explanation: 'Bravo ! Une VAN strictement positive indique que la rentabilité intrinsèque (TRI) excède le coût du capital (10%). Le projet doit être accepté.',
+      },
+      {
+        id: 'B',
+        text: 'Le projet est déficitaire et doit être immédiatement rejeté',
+        isCorrect: false,
+        explanation: 'Faux. Une VAN positive est le critère d\'acceptation par excellence.',
+      },
+      {
+        id: 'C',
+        text: 'Le projet rembourse son investissement en 12 ans',
+        isCorrect: false,
+        explanation: 'Confusion entre la VAN (montant en FCFA) et le délai de récupération (durée en années).',
+      },
+    ],
+  },
+  {
+    id: 'DIAG_09',
+    domain: 'Courtage Assurance',
+    competencyCode: 'COURT-01',
+    question: "Dans le modèle économique d'un courtier d'assurance, sur quelle assiette est calculée la commission de courtage ?",
+    context: "Rémunération du courtier",
+    options: [
+      {
+        id: 'A',
+        text: 'Sur la Prime Nette d\'assurance (hors taxes et accessoires)',
+        isCorrect: true,
+        explanation: 'Exactement ! Le taux de commission (ex: 10% ou 12%) s\'applique conventionnellement sur la prime nette, les taxes et accessoires étant reversés.',
+      },
+      {
+        id: 'B',
+        text: 'Sur la Prime Totale TTC payée par le client',
+        isCorrect: false,
+        explanation: 'Non, les taxes fiscales d\'assurance (14.5% en CI) ne sont jamais commissionnées au bénéfice du courtier.',
+      },
+      {
+        id: 'C',
+        text: 'Sur le montant des sinistres déclarés par l\'assuré',
+        isCorrect: false,
+        explanation: 'Absolument pas. Les sinistres constituent des indemnités dues à la victime, pas une base de commission.',
+      },
+    ],
+  },
+  {
+    id: 'DIAG_10',
+    domain: 'Courtage Assurance',
+    competencyCode: 'COURT-03',
+    question: "Selon l'Article 13 du Code des Assurances CIMA révisé, quelle est la conséquence légale immédiate si la prime d'assurance n'est pas payée dans les délais prescrits ?",
+    context: "Réglementation CIMA zone UEMOA / Afrique Centrale",
+    options: [
+      {
+        id: 'A',
+        text: 'La garantie est suspendue : « Pas de prime, pas d\'assurance »',
+        isCorrect: true,
+        explanation: 'Connaissance réglementaire parfaite ! L\'Article 13 CIMA a instauré l\'interdiction stricte de l\'assurance à crédit. En l\'absence d\'encaissement préalable de la prime, la garantie ne peut prendre effet.',
+      },
+      {
+        id: 'B',
+        text: 'L\'assureur est tenu d\'indemniser et réclamera la prime plus tard sans pénalité',
+        isCorrect: false,
+        explanation: 'Faux et très dangereux ! L\'Article 13 décharge l\'assureur de toute indemnisation en cas de non-paiement de prime.',
+      },
+      {
+        id: 'C',
+        text: 'Le courtier doit payer la prime sur ses fonds propres',
+        isCorrect: false,
+        explanation: 'Non, le courtier est mandataire de l\'assuré et ne garantit pas personnellement le paiement des primes de ses clients.',
+      },
+    ],
+  },
+  {
+    id: 'DIAG_11',
+    domain: 'Comptabilité',
+    competencyCode: 'COMPT-05',
+    question: "Un équipement industriel acquis 10 000 000 FCFA est amorti en linéaire sur 5 ans. Au terme de la 3e année, quelle est sa Valeur Nette Comptable (VNC) ?",
+    context: "Inventaire et amortissements",
+    options: [
+      {
+        id: 'A',
+        text: '4 000 000 FCFA',
+        isCorrect: true,
+        explanation: 'Exact ! Annuité = 10M / 5 = 2M FCFA par an. Amortissements cumulés après 3 ans = 6M FCFA. VNC = 10M - 6M = 4 000 000 FCFA.',
+      },
+      {
+        id: 'B',
+        text: '6 000 000 FCFA',
+        isCorrect: false,
+        explanation: '6 000 000 FCFA représente le cumul des amortissements passés, pas la valeur nette restante.',
+      },
+      {
+        id: 'C',
+        text: '2 000 000 FCFA',
+        isCorrect: false,
+        explanation: 'Faux. 2 000 000 FCFA correspond à l\'annuité d\'une seule année.',
+      },
+    ],
+  },
+  {
+    id: 'DIAG_12',
+    domain: 'Excel',
+    competencyCode: 'EXCEL-02',
+    question: "Si la cellule A1 contient la formule '=SOMME(B1:B5)' et qu'une cellule de la plage B1:B5 contient l'erreur #DIV/0!, que renvoie A1 sans protection ?",
+    context: "Audit et robustesse des modèles",
+    options: [
+      {
+        id: 'A',
+        text: 'L\'erreur #DIV/0! se propage à la cellule A1',
+        isCorrect: true,
+        explanation: 'Tout à fait. Les erreurs de calcul se propagent le long de l\'arbre des dépendances d\'Excel, d\'où la nécessité d\'encadrer les calculs sensibles par SIERREUR.',
+      },
+      {
+        id: 'B',
+        text: 'La formule ignore la cellule en erreur et additionne le reste',
+        isCorrect: false,
+        explanation: 'Faux. La fonction standard SOMME ne filtre pas les erreurs (contrairement à AGREGAT).',
+      },
+      {
+        id: 'C',
+        text: 'La formule renvoie automatiquement zéro',
+        isCorrect: false,
+        explanation: 'Non, Excel ne remplace pas une erreur par zéro sans instruction explicite.',
+      },
+    ],
+  },
+];

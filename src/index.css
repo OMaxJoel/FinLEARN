@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-800 antialiased font-sans;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  /* Chiffres à espacement fixe pour alignement des tableaux financiers */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Scrollbar personnalisée moderne pour les tableaux denses et le tableur */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Grille Excel */
+.excel-cell-active {
+  @apply ring-2 ring-sky-500 z-10;
+}
+
+.excel-cell-error {
+  @apply bg-red-50 text-red-600;
+}
+
+.excel-cell-calculated {
+  @apply bg-emerald-50/50 font-medium text-emerald-900;
+}
