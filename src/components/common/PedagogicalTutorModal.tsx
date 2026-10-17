@@ -68,7 +68,7 @@ export const PedagogicalTutorModal: React.FC<{ activeDomain?: FinanceDomain }> =
       {/* Bouton Flottant Déclencheur */}
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:to-purple-800 text-white p-3 sm:px-4 sm:py-3 rounded-full shadow-2xl flex items-center gap-2.5 transition transform hover:scale-105 border border-indigo-300/40 focus:outline-none focus:ring-4 focus:ring-indigo-500/30"
+        className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:to-purple-800 text-white p-3 sm:px-4 sm:py-3 rounded-full shadow-2xl flex items-center gap-2.5 transition transform hover:scale-105 border border-indigo-300/40 focus:outline-none focus:ring-4 focus:ring-indigo-500/30"
         title="Ouvrir le Tuteur Pédagogique Intelligent"
       >
         <Sparkles className="w-5 h-5 text-amber-300 animate-pulse" />

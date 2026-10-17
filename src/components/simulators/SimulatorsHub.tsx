@@ -41,10 +41,10 @@ export const SimulatorsHub: React.FC = () => {
   return (
     <div className="space-y-6 pb-12 animate-fadeIn">
       {/* Barre de Navigation des Simulateurs */}
-      <div className="flex flex-wrap gap-2 p-2 bg-slate-200/80 rounded-2xl w-full">
+      <div className="flex overflow-x-auto sm:flex-wrap gap-2 p-2 bg-slate-200/80 rounded-2xl w-full scrollbar-none">
         <button
           onClick={() => setSelectedSimulator('accounting')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
             selectedSimulator === 'accounting'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-700 hover:bg-slate-300/60'
@@ -56,7 +56,7 @@ export const SimulatorsHub: React.FC = () => {
 
         <button
           onClick={() => setSelectedSimulator('variance')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
             selectedSimulator === 'variance'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-700 hover:bg-slate-300/60'
@@ -68,7 +68,7 @@ export const SimulatorsHub: React.FC = () => {
 
         <button
           onClick={() => setSelectedSimulator('breakeven')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
             selectedSimulator === 'breakeven'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-700 hover:bg-slate-300/60'
@@ -80,7 +80,7 @@ export const SimulatorsHub: React.FC = () => {
 
         <button
           onClick={() => setSelectedSimulator('analysis')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
             selectedSimulator === 'analysis'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-700 hover:bg-slate-300/60'
@@ -92,7 +92,7 @@ export const SimulatorsHub: React.FC = () => {
 
         <button
           onClick={() => setSelectedSimulator('treasury')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
             selectedSimulator === 'treasury'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-700 hover:bg-slate-300/60'
@@ -104,7 +104,7 @@ export const SimulatorsHub: React.FC = () => {
 
         <button
           onClick={() => setSelectedSimulator('pivot')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
             selectedSimulator === 'pivot'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-700 hover:bg-slate-300/60'
@@ -116,7 +116,7 @@ export const SimulatorsHub: React.FC = () => {
 
         <button
           onClick={() => setSelectedSimulator('investment')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
             selectedSimulator === 'investment'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-700 hover:bg-slate-300/60'
@@ -128,7 +128,7 @@ export const SimulatorsHub: React.FC = () => {
 
         <button
           onClick={() => setSelectedSimulator('brokerage')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
             selectedSimulator === 'brokerage'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-700 hover:bg-slate-300/60'
@@ -140,7 +140,7 @@ export const SimulatorsHub: React.FC = () => {
 
         <button
           onClick={() => setSelectedSimulator('portfolio')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
             selectedSimulator === 'portfolio'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-700 hover:bg-slate-300/60'
@@ -152,7 +152,7 @@ export const SimulatorsHub: React.FC = () => {
 
         <button
           onClick={() => setSelectedSimulator('consolidation')}
-          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap shrink-0 ${
             selectedSimulator === 'consolidation'
               ? 'bg-slate-900 text-white shadow-md'
               : 'text-slate-700 hover:bg-slate-300/60'

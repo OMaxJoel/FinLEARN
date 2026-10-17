@@ -131,10 +131,10 @@ export const AccountingSimulator: React.FC = () => {
       </div>
 
       {/* Navigation par Onglets (Journal, Grand Livre, Balance, États Financiers) */}
-      <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
+      <div className="flex overflow-x-auto sm:flex-wrap gap-2 border-b border-slate-200 pb-2 scrollbar-none">
         <button
           onClick={() => setActiveTab('journal')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
             activeTab === 'journal'
               ? 'bg-slate-900 text-white shadow-sm'
               : 'text-slate-600 hover:bg-slate-100'
@@ -145,7 +145,7 @@ export const AccountingSimulator: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('grandLivre')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
             activeTab === 'grandLivre'
               ? 'bg-slate-900 text-white shadow-sm'
               : 'text-slate-600 hover:bg-slate-100'
@@ -156,7 +156,7 @@ export const AccountingSimulator: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('balance')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
             activeTab === 'balance'
               ? 'bg-slate-900 text-white shadow-sm'
               : 'text-slate-600 hover:bg-slate-100'
@@ -167,7 +167,7 @@ export const AccountingSimulator: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab('etats')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
             activeTab === 'etats'
               ? 'bg-slate-900 text-white shadow-sm'
               : 'text-slate-600 hover:bg-slate-100'
@@ -184,7 +184,7 @@ export const AccountingSimulator: React.FC = () => {
       {activeTab === 'journal' && (
         <div className="space-y-6">
           {/* Formulaire de saisie d'écriture */}
-          <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
+          <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
             <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
               <Plus className="w-4 h-4 text-sky-600" />
               Saisir une Nouvelle Écriture Comptable
@@ -220,17 +220,18 @@ export const AccountingSimulator: React.FC = () => {
               </div>
             </div>
 
-            {/* Lignes de Débit / Crédit */}
-            <div className="space-y-2">
-              <div className="grid grid-cols-12 gap-2 text-[11px] font-bold text-slate-500 uppercase px-2">
-                <div className="col-span-5">Compte SYSCOHADA</div>
-                <div className="col-span-3 text-right">Débit (FCFA)</div>
-                <div className="col-span-3 text-right">Crédit (FCFA)</div>
-                <div className="col-span-1"></div>
-              </div>
+            {/* Lignes de Débit / Crédit (Scrollable sur mobile pour confort de saisie) */}
+            <div className="overflow-x-auto pb-1">
+              <div className="min-w-[500px] space-y-2">
+                <div className="grid grid-cols-12 gap-2 text-[11px] font-bold text-slate-500 uppercase px-2">
+                  <div className="col-span-5">Compte SYSCOHADA</div>
+                  <div className="col-span-3 text-right">Débit (FCFA)</div>
+                  <div className="col-span-3 text-right">Crédit (FCFA)</div>
+                  <div className="col-span-1"></div>
+                </div>
 
-              {lines.map((l) => (
-                <div key={l.id} className="grid grid-cols-12 gap-2 items-center">
+                {lines.map((l) => (
+                  <div key={l.id} className="grid grid-cols-12 gap-2 items-center">
                   <div className="col-span-5">
                     <select
                       value={l.accountCode}
@@ -273,6 +274,7 @@ export const AccountingSimulator: React.FC = () => {
                   </div>
                 </div>
               ))}
+              </div>
             </div>
 
             {/* Total et Équilibre en direct */}

@@ -11,6 +11,7 @@ import {
   Briefcase,
   Sparkles,
   BookOpen,
+  X,
 } from 'lucide-react';
 
 export type NavigationTab =
@@ -30,12 +31,16 @@ interface SidebarProps {
   activeTab: NavigationTab;
   onSelectTab: (tab: NavigationTab) => void;
   globalScorePercent?: number;
+  isOpenMobile?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   onSelectTab,
   globalScorePercent = 68,
+  isOpenMobile = false,
+  onCloseMobile,
 }) => {
   const navItems: { id: NavigationTab; label: string; icon: React.ReactNode; isNew?: boolean }[] = [
     { id: 'dashboard', label: 'Accueil', icon: <Home className="w-4 h-4" /> },
@@ -52,13 +57,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <aside className="w-64 bg-[#0B132B] text-slate-300 flex flex-col justify-between shrink-0 min-h-screen sticky top-0 z-30 select-none border-r border-slate-800/80">
-      {/* 1. Header & Logo FinExpert */}
-      <div className="p-5 pb-3">
+    <>
+      {/* 0. Arrière-plan sombre semi-transparent (Backdrop) sur mobile */}
+      {isOpenMobile && (
         <div
-          onClick={() => onSelectTab('dashboard')}
-          className="flex items-center gap-3 cursor-pointer group"
-        >
+          onClick={onCloseMobile}
+          className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-40 lg:hidden transition-opacity duration-300"
+          aria-label="Fermer le menu de navigation"
+        />
+      )}
+
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[#0B132B] text-slate-300 flex flex-col justify-between shrink-0 h-screen select-none border-r border-slate-800/80 transition-transform duration-300 ease-in-out lg:static lg:translate-x-0 lg:w-64 lg:min-h-screen lg:sticky lg:top-0 lg:z-30 ${
+          isOpenMobile ? 'translate-x-0 shadow-2xl' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        {/* 1. Header & Logo FinExpert */}
+        <div className="p-5 pb-3 flex items-center justify-between">
+          <div
+            onClick={() => {
+              onSelectTab('dashboard');
+              onCloseMobile?.();
+            }}
+            className="flex items-center gap-3 cursor-pointer group"
+          >
           {/* Logo Graphique Multi-couleurs */}
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-900 via-slate-900 to-indigo-950 p-2 flex items-center justify-center border border-indigo-500/30 shadow-md shadow-indigo-500/20 group-hover:border-indigo-400 transition">
             <svg viewBox="0 0 32 32" className="w-6 h-6" fill="none">
@@ -100,6 +122,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </p>
           </div>
         </div>
+
+        {/* Bouton Fermer sur Mobile */}
+        <button
+          onClick={onCloseMobile}
+          className="lg:hidden p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800/80 transition"
+          aria-label="Fermer le menu"
+        >
+          <X className="w-5 h-5" />
+        </button>
       </div>
 
       {/* 2. Liste de Navigation */}
@@ -110,7 +141,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           return (
             <button
               key={item.id}
-              onClick={() => onSelectTab(item.id)}
+              onClick={() => {
+                onSelectTab(item.id);
+                onCloseMobile?.();
+              }}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium transition-all ${
                 isActive
                   ? 'bg-[#0070F3] text-white font-bold shadow-md shadow-blue-500/30'
@@ -202,5 +236,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
     </aside>
+    </>
   );
 };

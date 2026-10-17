@@ -205,9 +205,9 @@ export const ProgressionView: React.FC<ProgressionViewProps> = ({
   );
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 animate-fadeIn">
+    <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-fadeIn">
       {/* 1. Header Hero Bannière Progression */}
-      <div className="relative rounded-3xl overflow-hidden shadow-lg border border-slate-200/80 bg-gradient-to-r from-[#0E1A38] via-[#122853] to-[#0B152E] text-white p-7 sm:p-9">
+      <div className="relative rounded-3xl overflow-hidden shadow-lg border border-slate-200/80 bg-gradient-to-r from-[#0E1A38] via-[#122853] to-[#0B152E] text-white p-4 sm:p-8">
         <div className="flex flex-col lg:flex-row items-center justify-between gap-6 relative z-10">
           <div className="space-y-3 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-sky-300 text-xs font-semibold backdrop-blur-xs">
@@ -223,7 +223,7 @@ export const ProgressionView: React.FC<ProgressionViewProps> = ({
           </div>
 
           {/* Jauge Globale Circulaire */}
-          <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-3xl p-6 flex items-center gap-6 shrink-0 shadow-lg">
+          <div className="bg-white/10 backdrop-blur-md border border-white/15 rounded-3xl p-4 sm:p-6 flex flex-col xs:flex-row items-center gap-4 sm:gap-6 shrink-0 shadow-lg">
             <div className="relative w-24 h-24 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
                 <circle

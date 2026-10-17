@@ -77,9 +77,9 @@ export const CatalogView: React.FC<CatalogViewProps> = ({
   });
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 animate-fadeIn">
+    <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-fadeIn">
       {/* 1. Header Bannière du Catalogue */}
-      <div className="relative rounded-3xl overflow-hidden shadow-lg border border-slate-200/80 bg-gradient-to-r from-[#0E1A38] via-[#122853] to-[#0B152E] text-white p-7 sm:p-9">
+      <div className="relative rounded-3xl overflow-hidden shadow-lg border border-slate-200/80 bg-gradient-to-r from-[#0E1A38] via-[#122853] to-[#0B152E] text-white p-4 sm:p-8">
         <div className="relative z-10 max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/30 text-sky-300 text-xs font-semibold backdrop-blur-xs">
             <Sparkles className="w-3.5 h-3.5" />

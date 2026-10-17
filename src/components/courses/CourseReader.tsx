@@ -107,11 +107,11 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12 animate-fadeIn">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 pb-12 animate-fadeIn">
       {/* 1. Barre Latérale Gauche : Sélecteur de Parcours et Sommaire des Modules */}
-      <div className="lg:col-span-4 space-y-6">
+      <div className="lg:col-span-4 space-y-4 sm:space-y-6">
         {/* Sélecteur de Parcours Métier */}
-        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm space-y-3">
+        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-sm space-y-3">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-blue-600" />
@@ -144,7 +144,7 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
         </div>
 
         {/* Sommaire des Modules et Leçons Dynamique */}
-        <div className="bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-blue-600" />
@@ -209,9 +209,9 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
       </div>
 
       {/* 2. Zone Principale : Contenu Structuré de la Leçon Active */}
-      <div className="lg:col-span-8 space-y-6">
+      <div className="lg:col-span-8 space-y-4 sm:space-y-6">
         {/* En-tête de la Leçon */}
-        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-blue-500/10 text-blue-700 border border-blue-500/20">
               {lesson.difficulty} • Conforme OHADA / UEMOA / CIMA
@@ -249,7 +249,7 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
         </div>
 
         {/* Sections Théoriques avec Analogies & Explications Intuitives */}
-        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-6">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4 sm:space-y-6">
           {lesson.theorySections.map((sec, idx) => (
             <div key={idx} className="space-y-3">
               <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">
@@ -283,7 +283,7 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
 
         {/* Exemple Résolu Pas à Pas */}
         {lesson.solvedExample && (
-          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
               <Award className="w-5 h-5 text-amber-500" />
               <h3 className="font-bold text-base text-slate-900">
@@ -291,7 +291,7 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
               </h3>
             </div>
 
-            <p className="text-xs text-slate-600 bg-amber-50/50 p-3.5 rounded-2xl border border-amber-200/50">
+            <p className="text-xs text-slate-600 bg-amber-50/50 p-3 sm:p-3.5 rounded-2xl border border-amber-200/50">
               <strong>Contexte réel : </strong>
               {lesson.solvedExample.context}
             </p>
@@ -300,7 +300,7 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
               {lesson.solvedExample.stepByStepSolution.map((st) => (
                 <div
                   key={st.step}
-                  className="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1.5"
+                  className="p-3.5 sm:p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-1.5"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-blue-600 uppercase">
@@ -308,7 +308,7 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
                     </span>
                   </div>
                   {st.calculation && (
-                    <div className="font-mono text-xs font-bold bg-white p-2 rounded-lg border border-slate-200 text-slate-800">
+                    <div className="font-mono text-xs font-bold bg-white p-2 rounded-lg border border-slate-200 text-slate-800 overflow-x-auto">
                       {st.calculation}
                     </div>
                   )}
@@ -320,7 +320,7 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
         )}
 
         {/* Exercice d'Application Interactive avec Évaluateur */}
-        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-5">
+        <div className="bg-white rounded-3xl p-4 sm:p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-5">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-blue-600" />
@@ -402,7 +402,7 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
 
         {/* Mini-Quiz Évaluatif */}
         {lesson.quiz && lesson.quiz.length > 0 && (
-          <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4">
+          <div className="bg-white rounded-3xl p-4 sm:p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4">
             <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
               <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               <h3 className="font-bold text-base text-slate-900">

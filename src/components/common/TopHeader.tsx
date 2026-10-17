@@ -12,6 +12,7 @@ import {
   Award,
   Sparkles,
   CheckCircle2,
+  Menu,
 } from 'lucide-react';
 
 interface TopHeaderProps {
@@ -21,6 +22,8 @@ interface TopHeaderProps {
   onOpenDiagnostic: () => void;
   searchTerm: string;
   onSearchChange: (term: string) => void;
+  onToggleMobileSidebar?: () => void;
+  onNavigateHome?: () => void;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
@@ -30,26 +33,51 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onOpenDiagnostic,
   searchTerm,
   onSearchChange,
+  onToggleMobileSidebar,
+  onNavigateHome,
 }) => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200/80 px-6 flex items-center justify-between sticky top-0 z-20 shadow-2xs">
+    <header className="h-16 bg-white border-b border-slate-200/80 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20 shadow-2xs">
+      {/* 0. Bouton Hamburger & Mini-Logo sur Mobile (< lg) */}
+      <div className="flex items-center gap-1.5 lg:hidden mr-2 shrink-0">
+        <button
+          onClick={onToggleMobileSidebar}
+          className="p-2 -ml-1 rounded-xl text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition focus:outline-none"
+          aria-label="Ouvrir le menu de navigation"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div
+          onClick={onNavigateHome}
+          className="flex items-center gap-1.5 cursor-pointer"
+        >
+          <div className="w-7 h-7 rounded-lg bg-[#0B132B] flex items-center justify-center border border-slate-700 shadow-xs">
+            <span className="font-extrabold text-[11px] text-sky-400 font-sans">FE</span>
+          </div>
+          <span className="hidden xs:inline font-extrabold text-sm tracking-tight text-slate-900">
+            Fin<span className="text-sky-500">Expert</span>
+          </span>
+        </div>
+      </div>
+
       {/* 1. Barre de Recherche Flottante */}
-      <div className="flex-1 max-w-xl">
+      <div className="flex-1 max-w-xl min-w-0 mr-2 sm:mr-4">
         <div className="relative">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
             onFocus={onOpenSearch}
-            placeholder="Rechercher un cours, une compétence, un simulateur..."
-            className="w-full bg-[#F8FAFC] border border-slate-200/80 hover:border-slate-300 focus:border-blue-500 rounded-2xl pl-10 pr-14 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition"
+            placeholder="Rechercher cours, simulateur, jeu..."
+            className="w-full bg-[#F8FAFC] border border-slate-200/80 hover:border-slate-300 focus:border-blue-500 rounded-2xl pl-9 sm:pl-10 pr-4 sm:pr-14 py-2 text-xs text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:bg-white transition"
           />
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1">
             <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200/70 px-1.5 py-0.5 rounded-md border border-slate-300/50">
               ⌘ K
             </span>
@@ -58,20 +86,20 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
       </div>
 
       {/* 2. Actions Rapides à Droite */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-1.5 sm:gap-4 shrink-0">
         {/* Cloche de Notifications */}
         <div className="relative">
           <button
             onClick={() => setIsNotifOpen(!isNotifOpen)}
-            className="w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center justify-center relative transition"
+            className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center justify-center relative transition"
             title="Notifications"
           >
             <Bell className="w-4 h-4" />
-            <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
+            <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 w-2 h-2 bg-rose-500 rounded-full ring-2 ring-white" />
           </button>
 
           {isNotifOpen && (
-            <div className="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-slate-200 p-4 text-xs z-50 animate-fadeIn">
+            <div className="absolute right-0 mt-2 w-[calc(100vw-24px)] sm:w-80 max-w-sm bg-white rounded-2xl shadow-xl border border-slate-200 p-4 text-xs z-50 animate-fadeIn">
               <div className="flex justify-between items-center mb-2 pb-2 border-b border-slate-100">
                 <span className="font-bold text-slate-900">Notifications</span>
                 <span className="text-[10px] text-blue-600 font-semibold cursor-pointer">
@@ -97,7 +125,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
         {/* Bouton Mode Sombre / Clair */}
         <button
           onClick={() => setIsDarkMode(!isDarkMode)}
-          className="w-9 h-9 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex items-center justify-center transition"
+          className="hidden xs:flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 items-center justify-center transition"
           title="Mode sombre"
         >
           {isDarkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4" />}

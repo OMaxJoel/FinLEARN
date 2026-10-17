@@ -35,15 +35,15 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
   onOpenDiagnostic,
 }) => {
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-6 animate-fadeIn">
+    <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-fadeIn">
       {/* Grille Principale 2 Colonnes : Contenu Central (70%) + Colonne Profil/Activités (30%) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* ========================================================= */}
         {/* COLONNE GAUCHE / CENTRALE (8 sur 12 cols en large) */}
         {/* ========================================================= */}
-        <div className="lg:col-span-8 space-y-6">
+        <div className="lg:col-span-8 space-y-4 sm:space-y-6">
           {/* 1. Grand Bannière Héroïque "VOTRE PARCOURS DE FORMATION" */}
-          <div className="relative rounded-3xl overflow-hidden shadow-lg border border-slate-200/80 bg-gradient-to-r from-[#0E1A38] via-[#11244A] to-[#0A1633] text-white p-7 sm:p-9 min-h-[220px] flex flex-col justify-between">
+          <div className="relative rounded-3xl overflow-hidden shadow-lg border border-slate-200/80 bg-gradient-to-r from-[#0E1A38] via-[#11244A] to-[#0A1633] text-white p-4 sm:p-8 min-h-[190px] flex flex-col justify-between">
             {/* Arrière-plan Skyline Abidjan Lagoon au Crépuscule */}
             <div className="absolute inset-0 z-0 opacity-40 mix-blend-screen pointer-events-none overflow-hidden">
               <svg viewBox="0 0 1000 350" preserveAspectRatio="none" className="w-full h-full">
@@ -128,11 +128,11 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
             </div>
 
             {/* Carte Composite Découpée en 2 */}
-            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden p-5 flex flex-col md:flex-row gap-6 items-center">
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs overflow-hidden p-4 sm:p-5 flex flex-col md:flex-row gap-4 sm:gap-6 items-start md:items-center">
               {/* Côté Gauche : Photo + Module en cours */}
-              <div className="flex items-start gap-4 flex-1">
+              <div className="flex items-start gap-3 sm:gap-4 flex-1">
                 {/* Vignette Photo Ordinateur / Bourse */}
-                <div className="w-28 h-24 sm:w-36 sm:h-28 rounded-2xl overflow-hidden shrink-0 bg-slate-900 relative shadow-sm border border-slate-200">
+                <div className="w-20 h-20 sm:w-36 sm:h-28 rounded-2xl overflow-hidden shrink-0 bg-slate-900 relative shadow-sm border border-slate-200">
                   <img
                     src="https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=300&q=80"
                     alt="Analyse Financière"
@@ -399,7 +399,7 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
           </div>
 
           {/* 4. Spotlight Banner "NOUVEAU - Explorez nos missions immersives en 3D" */}
-          <div className="relative rounded-3xl overflow-hidden shadow-sm border border-slate-800 bg-[#0A1224] text-white p-6 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="relative rounded-3xl overflow-hidden shadow-sm border border-slate-800 bg-[#0A1224] text-white p-4 sm:p-7 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             {/* Arrière-plan Bureau Exécutif / Salle de Marché */}
             <div className="absolute inset-0 opacity-30 pointer-events-none">
               <img
@@ -452,9 +452,9 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
         {/* ========================================================= */}
         {/* COLONNE DROITE (4 sur 12 cols en large) */}
         {/* ========================================================= */}
-        <div className="lg:col-span-4 space-y-6">
+        <div className="lg:col-span-4 space-y-4 sm:space-y-6">
           {/* 1. Carte Profil Apprenant "Bonjour Max 👋" */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-6 space-y-5">
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-4 sm:p-6 space-y-4 sm:space-y-5">
             {/* Header Profil */}
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-700 text-white font-bold flex items-center justify-center text-sm overflow-hidden shadow-sm ring-4 ring-slate-100 shrink-0">
@@ -530,7 +530,7 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
           </div>
 
           {/* 2. Section "Mes dernières activités" */}
-          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-6 space-y-4">
+          <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-4 sm:p-6 space-y-3 sm:space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="font-extrabold text-slate-900 text-sm tracking-tight">
                 Mes dernières activités

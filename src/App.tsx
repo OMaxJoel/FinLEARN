@@ -16,6 +16,14 @@ import { SearchModal } from './components/common/SearchModal';
 import { DiagnosticModal } from './components/diagnostic/DiagnosticModal';
 import { GameMissionModal } from './components/game/GameMissionModal';
 import { PedagogicalTutorModal } from './components/common/PedagogicalTutorModal';
+import {
+  Home,
+  GraduationCap,
+  Calculator,
+  Gamepad2,
+  FileSpreadsheet,
+  Menu,
+} from 'lucide-react';
 
 export const App: React.FC = () => {
   // Profil de l'utilisateur actif (initialisé par défaut sur Max Oura pour correspondre à la maquette de référence)
@@ -36,6 +44,7 @@ export const App: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [headerSearchTerm, setHeaderSearchTerm] = useState('');
   const [activeMissionId, setActiveMissionId] = useState<string | null>(null);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Sauvegarde automatique du profil lors des changements
   useEffect(() => {
@@ -99,6 +108,8 @@ export const App: React.FC = () => {
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         globalScorePercent={68}
+        isOpenMobile={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
       {/* 2. Contenu Principal de l'Application avec En-tête Supérieur */}
@@ -116,10 +127,12 @@ export const App: React.FC = () => {
               setIsSearchOpen(true);
             }
           }}
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
+          onNavigateHome={() => setActiveTab('dashboard')}
         />
 
         {/* Zone de Visualisation avec Défilement Fluide */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
           {activeTab === 'dashboard' && (
             <FinExpertDashboard
               profile={profile}
@@ -130,7 +143,7 @@ export const App: React.FC = () => {
           )}
 
           {activeTab === 'courses' && (
-            <div className="p-6 max-w-[1600px] mx-auto">
+            <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto">
               <CourseReader
                 completedLessonIds={profile.completedLessons}
                 onLessonCompleted={handleLessonCompleted}
@@ -147,19 +160,19 @@ export const App: React.FC = () => {
           )}
 
           {activeTab === 'simulators' && (
-            <div className="p-6 max-w-[1600px] mx-auto">
+            <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto">
               <SimulatorsHub />
             </div>
           )}
 
           {activeTab === 'excel' && (
-            <div className="p-6 max-w-[1600px] mx-auto">
+            <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto">
               <ExcelLab />
             </div>
           )}
 
           {activeTab === 'missions' && (
-            <div className="p-6 max-w-[1600px] mx-auto">
+            <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto">
               <MissionsHub
                 onLaunchMission={(mId) => setActiveMissionId(mId)}
                 completedMissionIds={profile.completedMissions}
@@ -184,14 +197,14 @@ export const App: React.FC = () => {
           )}
 
           {activeTab === 'portfolio' && (
-            <div className="p-6 max-w-[1600px] mx-auto">
+            <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto">
               <PortfolioView profile={profile} />
             </div>
           )}
 
           {activeTab === 'tutor' && (
-            <div className="p-6 max-w-[1600px] mx-auto">
-              <div className="bg-white rounded-3xl p-8 border border-slate-200/80 shadow-sm text-center space-y-4 max-w-xl mx-auto mt-12">
+            <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto">
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-sm text-center space-y-4 max-w-xl mx-auto mt-8 sm:mt-12">
                 <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center mx-auto text-amber-500 shadow-sm">
                   <span className="text-3xl">✨</span>
                 </div>
@@ -223,11 +236,11 @@ export const App: React.FC = () => {
           )}
 
           {/* Pied de Page Subtil */}
-          <footer className="border-t border-slate-200/80 bg-white/50 py-6 text-xs text-slate-500 mt-12 px-6">
-            <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+          <footer className="border-t border-slate-200/80 bg-white/50 py-6 text-xs text-slate-500 mt-12 px-4 sm:px-6">
+            <div className="max-w-[1600px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left">
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
                 <span className="font-bold text-slate-700">FinExpert Immersion</span>
-                <span>•</span>
+                <span className="hidden sm:inline">•</span>
                 <span>Plateforme de Formation Financière Professionnelle (Espace OHADA / UEMOA / CIMA)</span>
               </div>
               <div className="text-[11px] text-slate-400">
@@ -236,6 +249,71 @@ export const App: React.FC = () => {
             </div>
           </footer>
         </main>
+
+        {/* 3. Barre de Navigation Inférieure Mobile (Ergonomie Smartphone au Pouce) */}
+        <nav
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-2 py-1 flex items-center justify-around shadow-lg"
+          aria-label="Navigation principale mobile"
+        >
+          <button
+            onClick={() => setActiveTab('dashboard')}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${
+              activeTab === 'dashboard' ? 'text-[#0070F3] font-bold' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <Home className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">Accueil</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('courses')}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${
+              activeTab === 'courses' ? 'text-[#0070F3] font-bold' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <GraduationCap className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">Parcours</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('simulators')}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${
+              activeTab === 'simulators' ? 'text-[#0070F3] font-bold' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <Calculator className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">Simulateurs</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('missions')}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${
+              activeTab === 'missions' ? 'text-[#0070F3] font-bold' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <Gamepad2 className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">Jeux</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('excel')}
+            className={`flex flex-col items-center justify-center py-1 px-2 rounded-xl transition ${
+              activeTab === 'excel' ? 'text-emerald-600 font-bold' : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <FileSpreadsheet className="w-5 h-5 text-emerald-500" />
+            <span className="text-[10px] mt-0.5">Excel</span>
+          </button>
+
+          <button
+            onClick={() => setIsMobileSidebarOpen(true)}
+            className="flex flex-col items-center justify-center py-1 px-2 rounded-xl text-slate-500 hover:text-slate-900 transition"
+            aria-label="Ouvrir le menu complet"
+          >
+            <Menu className="w-5 h-5" />
+            <span className="text-[10px] mt-0.5">Menu</span>
+          </button>
+        </nav>
       </div>
 
       {/* Modale de Recherche Rapide ⌘ K */}

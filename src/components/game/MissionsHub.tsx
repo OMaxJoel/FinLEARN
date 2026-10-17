@@ -85,7 +85,7 @@ export const MissionsHub: React.FC<MissionsHubProps> = ({
   return (
     <div className="space-y-6 pb-12 animate-fadeIn">
       {/* 1. En-tête Héroïque de l'espace Missions */}
-      <div className="relative rounded-3xl overflow-hidden shadow-lg border border-slate-200/80 bg-gradient-to-r from-[#0E1A38] via-[#1A163B] to-[#0D152D] text-white p-7 sm:p-9">
+      <div className="relative rounded-3xl overflow-hidden shadow-lg border border-slate-200/80 bg-gradient-to-r from-[#0E1A38] via-[#1A163B] to-[#0D152D] text-white p-4 sm:p-8">
         <div className="relative z-10 max-w-3xl space-y-3">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-purple-300 text-xs font-semibold backdrop-blur-xs">
             <Gamepad2 className="w-3.5 h-3.5" />
@@ -157,7 +157,7 @@ export const MissionsHub: React.FC<MissionsHubProps> = ({
               key={mission.id}
               className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col justify-between hover:shadow-md hover:border-purple-300 transition-all group"
             >
-              <div className="p-6 space-y-4">
+              <div className="p-4 sm:p-6 space-y-3 sm:space-y-4">
                 <div className="flex items-center justify-between">
                   <span
                     className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider ${
