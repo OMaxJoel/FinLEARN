@@ -7,6 +7,7 @@ import {
   Module360,
 } from '../../types/pedagogy360';
 import { dbPersistence, SaveResult } from './dbClient';
+import { MASTER_COMPETENCIES_360 } from '../../data/curriculum360Data';
 
 // ============================================================================
 // MOTEUR DE PROGRESSION ET DE CALCUL CERTIFIÉ 360°
@@ -85,6 +86,39 @@ export class ProgressEngine {
   }
 
   /**
+   * Enregistre la position de lecture sans valider la leçon.
+   */
+  public static async recordLessonOpened(
+    enrollment: PathEnrollment360,
+    path: LearningPath360,
+    lesson: Lesson360
+  ): Promise<PathEnrollment360> {
+    const existing = enrollment.activityRecords[lesson.id];
+    const records = {
+      ...enrollment.activityRecords,
+      [lesson.id]: {
+        activityId: lesson.id,
+        activityType: 'lesson' as const,
+        state: existing?.state === 'terminee' ? 'terminee' as const : 'en_cours' as const,
+        consultationDone: existing?.consultationDone || false,
+        score: existing?.score || 0,
+        maxScore: 100,
+        attempts: existing?.attempts || 0,
+        lastAttemptAt: new Date().toISOString(),
+      },
+    };
+    const updated = this.recalculateMetrics({
+      ...enrollment,
+      lastActivityAt: new Date().toISOString(),
+      currentActivityId: lesson.id,
+      currentLocation: { moduleId: lesson.moduleId, chapterId: lesson.chapterId, lessonId: lesson.id },
+      activityRecords: records,
+    }, path);
+    await dbPersistence.saveEnrollment(updated);
+    return updated;
+  }
+
+  /**
    * Marque une leçon comme consultée et met à jour l'emplacement courant
    */
   public static async recordLessonConsultation(
@@ -107,8 +141,10 @@ export class ProgressEngine {
     records[lesson.id] = {
       ...currentRec,
       consultationDone: true,
-      state: currentRec.state === 'terminee' ? 'terminee' : 'en_cours',
-      attempts: currentRec.attempts + 1,
+      state: 'terminee',
+      score: 100,
+      maxScore: 100,
+      attempts: currentRec.consultationDone ? currentRec.attempts : currentRec.attempts + 1,
       lastAttemptAt: new Date().toISOString(),
     };
 
@@ -124,6 +160,41 @@ export class ProgressEngine {
       activityRecords: records,
     };
 
+    const calculated = this.recalculateMetrics(updated, path);
+    await dbPersistence.saveEnrollment(calculated);
+    return calculated;
+  }
+
+  public static async saveActivityDraft(
+    enrollment: PathEnrollment360,
+    path: LearningPath360,
+    lesson: Lesson360,
+    activityId: string,
+    activityType: 'guided_exercise' | 'autonomous_exercise',
+    savedState: unknown
+  ): Promise<PathEnrollment360> {
+    const existing = enrollment.activityRecords[activityId];
+    const updated: PathEnrollment360 = {
+      ...enrollment,
+      lastActivityAt: new Date().toISOString(),
+      currentActivityId: activityId,
+      currentLocation: { moduleId: lesson.moduleId, chapterId: lesson.chapterId, lessonId: lesson.id },
+      activityRecords: {
+        ...enrollment.activityRecords,
+        [activityId]: {
+          activityId,
+          activityType,
+          state: existing?.state === 'terminee' ? 'terminee' : 'en_cours',
+          consultationDone: existing?.consultationDone || false,
+          score: existing?.score || 0,
+          maxScore: existing?.maxScore || 100,
+          attempts: existing?.attempts || 0,
+          savedState,
+          lastAttemptAt: new Date().toISOString(),
+          completedAt: existing?.completedAt,
+        },
+      },
+    };
     const calculated = this.recalculateMetrics(updated, path);
     await dbPersistence.saveEnrollment(calculated);
     return calculated;
@@ -255,8 +326,9 @@ export class ProgressEngine {
     const targetedCompetencies = path.competenciesTargeted || [];
     const validatedCompetencies: string[] = [];
 
-    // Une compétence est maîtrisée si les activités associées ont un taux de réussite >= 75%
+    // Une compétence exige des preuves de pratique et la réussite de ses évaluations métier.
     for (const compCode of targetedCompetencies) {
+      const requiredScore = MASTER_COMPETENCIES_360.find((competency) => competency.code === compCode)?.requiredScorePercent ?? 70;
       // Trouver tous les modules rattachés à cette compétence
       const relatedModules = path.levels
         .flatMap((lvl) => lvl.modules)
@@ -264,40 +336,39 @@ export class ProgressEngine {
 
       if (relatedModules.length === 0) continue;
 
-      let modulePracticalsDone = 0;
-      let modulePracticalsTotal = 0;
+      const practicalActivityIds: string[] = [];
+      let evaluationsPassed = true;
 
       for (const mod of relatedModules) {
+        const evaluationRecord = enrollment.activityRecords[mod.evaluation.id];
+        const evaluationPercent = evaluationRecord && evaluationRecord.maxScore > 0
+          ? (evaluationRecord.score / evaluationRecord.maxScore) * 100
+          : 0;
+        if (evaluationRecord?.state !== 'terminee' || evaluationPercent < Math.max(requiredScore, mod.evaluation.passingScorePercent)) {
+          evaluationsPassed = false;
+        }
+        const moduleActivityIds: string[] = [];
         for (const chap of mod.chapters) {
           for (const les of chap.lessons) {
-            if (les.guidedExercise?.id) {
-              modulePracticalsTotal++;
-              if (enrollment.activityRecords[les.guidedExercise.id]?.state === 'terminee') {
-                modulePracticalsDone++;
-              }
-            }
-            if (les.autonomousExercise?.id) {
-              modulePracticalsTotal++;
-              if (enrollment.activityRecords[les.autonomousExercise.id]?.state === 'terminee') {
-                modulePracticalsDone++;
-              }
-            }
-            if (les.practicalActivity?.id) {
-              modulePracticalsTotal++;
-              if (enrollment.activityRecords[les.practicalActivity.id]?.state === 'terminee') {
-                modulePracticalsDone++;
-              }
-            }
+            if (les.guidedExercise?.id) moduleActivityIds.push(les.guidedExercise.id);
+            if (les.autonomousExercise?.id) moduleActivityIds.push(les.autonomousExercise.id);
+            if (les.practicalActivity?.id) moduleActivityIds.push(les.practicalActivity.id);
           }
         }
+        practicalActivityIds.push(...moduleActivityIds);
       }
 
-      const compScore =
-        modulePracticalsTotal > 0
-          ? (modulePracticalsDone / modulePracticalsTotal) * 100
-          : 0;
+      const completedRecords = practicalActivityIds
+        .map((activityId) => enrollment.activityRecords[activityId])
+        .filter((record) => record?.state === 'terminee' && record.maxScore > 0);
+      const activityCompletionPercent = practicalActivityIds.length > 0
+        ? (completedRecords.length / practicalActivityIds.length) * 100
+        : 0;
+      const averageCompletedScore = completedRecords.length > 0
+        ? completedRecords.reduce((sum, record) => sum + (record.score / record.maxScore) * 100, 0) / completedRecords.length
+        : 0;
 
-      if (compScore >= 70) {
+      if (evaluationsPassed && practicalActivityIds.length > 0 && activityCompletionPercent >= 70 && averageCompletedScore >= requiredScore) {
         validatedCompetencies.push(compCode);
       }
     }
@@ -308,10 +379,16 @@ export class ProgressEngine {
         : 0;
 
     // Statut global du parcours
+    const allEvaluationsPassed = moduleEvaluations.length > 0 && moduleEvaluations.every((evaluation) => {
+      const record = enrollment.activityRecords[evaluation.id];
+      return record?.state === 'terminee' && (record.score / (record.maxScore || 100)) * 100 >= evaluation.passingScore;
+    });
+
     const isFullyCompleted =
       practicalActivitiesProgressPercent === 100 &&
       consultationProgressPercent === 100 &&
-      evaluationScorePercent >= 70;
+      evaluationScorePercent >= 70 &&
+      allEvaluationsPassed;
 
     return {
       ...enrollment,

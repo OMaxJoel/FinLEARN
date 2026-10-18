@@ -4,11 +4,7 @@ import { DEMO_PROFILES } from '../../data/mockDatasets';
 import {
   Search,
   Bell,
-  Moon,
-  Sun,
   ChevronDown,
-  User,
-  ShieldCheck,
   Award,
   Sparkles,
   CheckCircle2,
@@ -24,6 +20,8 @@ interface TopHeaderProps {
   onSearchChange: (term: string) => void;
   onToggleMobileSidebar?: () => void;
   onNavigateHome?: () => void;
+  allowDemoProfiles?: boolean;
+  onSignOut?: () => void;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
@@ -35,13 +33,14 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
   onSearchChange,
   onToggleMobileSidebar,
   onNavigateHome,
+  allowDemoProfiles = false,
+  onSignOut,
 }) => {
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200/80 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20 shadow-2xs">
+    <header className="h-[72px] bg-white/95 backdrop-blur-xl border-b border-slate-200/80 px-3 sm:px-6 flex items-center justify-between sticky top-0 z-20 shadow-[0_3px_16px_rgba(15,23,42,0.035)]">
       {/* 0. Bouton Hamburger & Mini-Logo sur Mobile (< lg) */}
       <div className="flex items-center gap-1.5 lg:hidden mr-2 shrink-0">
         <button
@@ -79,7 +78,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           />
           <div className="absolute right-3 top-1/2 -translate-y-1/2 hidden sm:flex items-center gap-1">
             <span className="text-[10px] font-mono font-bold text-slate-400 bg-slate-200/70 px-1.5 py-0.5 rounded-md border border-slate-300/50">
-              ⌘ K
+              Ctrl K
             </span>
           </div>
         </div>
@@ -122,34 +121,16 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           )}
         </div>
 
-        {/* Bouton Mode Sombre / Clair */}
-        <button
-          onClick={() => setIsDarkMode(!isDarkMode)}
-          className="hidden xs:flex w-8 h-8 sm:w-9 sm:h-9 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 items-center justify-center transition"
-          title="Mode sombre"
-        >
-          {isDarkMode ? <Sun className="w-4 h-4 text-amber-500" /> : <Moon className="w-4 h-4" />}
-        </button>
-
         {/* Profil Utilisateur & Dropdown */}
         <div className="relative">
           <button
             onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-            className="flex items-center gap-2.5 p-1.5 pl-2 rounded-2xl hover:bg-slate-100 transition group"
+            className="flex items-center gap-2.5 p-1.5 pl-2 rounded-2xl hover:bg-slate-50 transition group"
           >
             {/* Avatar Photo Max Oura */}
             <div className="relative">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-700 text-white font-bold flex items-center justify-center text-xs overflow-hidden shadow-sm ring-2 ring-slate-200">
-                <img
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=160&h=160&q=80"
-                  alt={currentProfile.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    // Fallback sur initiales
-                    (e.target as HTMLElement).style.display = 'none';
-                  }}
-                />
-                <span className="select-none font-extrabold">MO</span>
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-sky-500 to-blue-700 text-white font-bold flex items-center justify-center text-xs shadow-sm ring-2 ring-blue-100">
+                <span className="select-none font-extrabold">{currentProfile.name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span>
               </div>
               <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-500 rounded-full ring-2 ring-white" />
             </div>
@@ -195,32 +176,40 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
                 </button>
               </div>
 
-              <div className="pt-2 mt-2 border-t border-slate-100">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-2 mb-1.5">
-                  Changer de Profil Démo :
-                </span>
-                <div className="space-y-1">
-                  {Object.entries(DEMO_PROFILES).map(([key, p]) => (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        onSelectProfile(key);
-                        setIsProfileMenuOpen(false);
-                      }}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex justify-between items-center transition ${
-                        currentProfile.id === p.id
-                          ? 'bg-blue-50 text-blue-700 font-bold'
-                          : 'text-slate-600 hover:bg-slate-50'
-                      }`}
-                    >
-                      <span>{p.name}</span>
-                      <span className="text-[10px] text-slate-400 capitalize">
-                        {p.experienceLevel}
-                      </span>
-                    </button>
-                  ))}
+              {allowDemoProfiles && (
+                <div className="pt-2 mt-2 border-t border-slate-100">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block px-2 mb-1.5">
+                    Profils de démonstration :
+                  </span>
+                  <div className="space-y-1">
+                    {Object.entries(DEMO_PROFILES).map(([key, p]) => (
+                      <button
+                        key={key}
+                        onClick={() => {
+                          onSelectProfile(key);
+                          setIsProfileMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs flex justify-between items-center transition ${
+                          currentProfile.id === p.id
+                            ? 'bg-blue-50 text-blue-700 font-bold'
+                            : 'text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <span>{p.name}</span>
+                        <span className="text-[10px] text-slate-400 capitalize">{p.experienceLevel}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
+              {onSignOut && (
+                <button
+                  onClick={() => { setIsProfileMenuOpen(false); onSignOut(); }}
+                  className="mt-2 w-full border-t border-slate-100 pt-3 text-left px-2.5 text-xs font-semibold text-slate-600 hover:text-rose-700"
+                >
+                  Se déconnecter
+                </button>
+              )}
             </div>
           )}
         </div>

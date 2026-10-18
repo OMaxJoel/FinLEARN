@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 
 interface PathEnrollmentModalProps {
+  userId: string;
   isOpen: boolean;
   onClose: () => void;
   path: LearningPath360;
@@ -25,6 +26,7 @@ interface PathEnrollmentModalProps {
 }
 
 export const PathEnrollmentModal: React.FC<PathEnrollmentModalProps> = ({
+  userId,
   isOpen,
   onClose,
   path,
@@ -32,10 +34,11 @@ export const PathEnrollmentModal: React.FC<PathEnrollmentModalProps> = ({
   onEnrollmentConfirmed,
   onOpenDiagnostic,
 }) => {
-  if (!isOpen) return null;
-
   const [isLoading, setIsLoading] = useState(false);
   const [prerequisitesAccepted, setPrerequisitesAccepted] = useState(true);
+  const [startError, setStartError] = useState<string | null>(null);
+
+  if (!isOpen) return null;
 
   const isAlreadyEnrolled = Boolean(existingEnrollment);
   const isCompleted = existingEnrollment?.status === 'termine';
@@ -43,13 +46,14 @@ export const PathEnrollmentModal: React.FC<PathEnrollmentModalProps> = ({
   const handleStartOrResume = async () => {
     setIsLoading(true);
     try {
-      const enrollment = await ProgressEngine.startOrResumePath('max_oura', path);
+      setStartError(null);
+      const enrollment = await ProgressEngine.startOrResumePath(userId, path);
       setIsLoading(false);
-      onEnrollmentConfirmed(enrollment, enrollment.currentActivityId);
+      onEnrollmentConfirmed(enrollment, enrollment.currentLocation?.lessonId || enrollment.currentActivityId);
       onClose();
     } catch (e) {
       setIsLoading(false);
-      onClose();
+      setStartError(e instanceof Error ? e.message : 'Impossible de démarrer ce parcours. Réessayez.');
     }
   };
 
@@ -82,6 +86,11 @@ export const PathEnrollmentModal: React.FC<PathEnrollmentModalProps> = ({
 
         {/* Détails du programme & Prérequis */}
         <div className="p-6 sm:p-8 space-y-6">
+          {startError && (
+            <div role="alert" className="p-3 rounded-xl border border-rose-200 bg-rose-50 text-rose-800 text-sm">
+              {startError}
+            </div>
+          )}
           <div className="grid grid-cols-3 gap-3 text-center">
             <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200">
               <Clock className="w-4 h-4 text-slate-500 mx-auto mb-1" />

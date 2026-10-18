@@ -1,22 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { UserProfile } from './types/pedagogy';
 import { DEMO_PROFILES } from './data/mockDatasets';
 import { GAME_MISSIONS } from './data/gameMissionsData';
 import { Sidebar, NavigationTab } from './components/common/Sidebar';
 import { TopHeader } from './components/common/TopHeader';
 import { FinExpertDashboard } from './components/dashboard/FinExpertDashboard';
-import { CourseReader } from './components/courses/CourseReader';
-import { CatalogView } from './components/courses/CatalogView';
-import { ExcelLab } from './components/simulators/ExcelLab';
-import { SimulatorsHub } from './components/simulators/SimulatorsHub';
-import { MissionsHub } from './components/game/MissionsHub';
-import { PortfolioView } from './components/portfolio/PortfolioView';
-import { ProgressionView } from './components/dashboard/ProgressionView';
 import { SearchModal } from './components/common/SearchModal';
 import { DiagnosticModal } from './components/diagnostic/DiagnosticModal';
 import { GameMissionModal } from './components/game/GameMissionModal';
 import { PedagogicalTutorModal } from './components/common/PedagogicalTutorModal';
-import { AuthorStudio } from './components/author/AuthorStudio';
+import { AccessGate } from './components/common/AccessGate';
 import {
   Home,
   GraduationCap,
@@ -26,7 +19,23 @@ import {
   Menu,
 } from 'lucide-react';
 
+const CourseReader = lazy(() => import('./components/courses/CourseReader').then((module) => ({ default: module.CourseReader })));
+const CatalogView = lazy(() => import('./components/courses/CatalogView').then((module) => ({ default: module.CatalogView })));
+const ExcelLab = lazy(() => import('./components/simulators/ExcelLab').then((module) => ({ default: module.ExcelLab })));
+const SimulatorsHub = lazy(() => import('./components/simulators/SimulatorsHub').then((module) => ({ default: module.SimulatorsHub })));
+const MissionsHub = lazy(() => import('./components/game/MissionsHub').then((module) => ({ default: module.MissionsHub })));
+const PortfolioView = lazy(() => import('./components/portfolio/PortfolioView').then((module) => ({ default: module.PortfolioView })));
+const ProgressionView = lazy(() => import('./components/dashboard/ProgressionView').then((module) => ({ default: module.ProgressionView })));
+const AuthorStudio = lazy(() => import('./components/author/AuthorStudio').then((module) => ({ default: module.AuthorStudio })));
+
+const SectionLoading: React.FC = () => (
+  <div className="mx-auto mt-10 max-w-xl rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-500 shadow-sm" role="status">
+    Chargement de cet espace…
+  </div>
+);
+
 export const App: React.FC = () => {
+  const [authStatus, setAuthStatus] = useState<'checking' | 'signed_in' | 'demo' | 'signed_out'>('checking');
   // Profil de l'utilisateur actif (initialisé par défaut sur Max Oura pour correspondre à la maquette de référence)
   const [profile, setProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('finlearn_profile');
@@ -41,11 +50,46 @@ export const App: React.FC = () => {
   });
 
   const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
+  const [selectedPathId, setSelectedPathId] = useState<string>('PATH_FIN_ANALYST_360');
+  const [initialLessonId, setInitialLessonId] = useState<string | undefined>(undefined);
   const [isDiagnosticOpen, setIsDiagnosticOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [headerSearchTerm, setHeaderSearchTerm] = useState('');
   const [activeMissionId, setActiveMissionId] = useState<string | null>(null);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch('/api/auth?action=me', { credentials: 'same-origin' })
+      .then(async (response) => {
+        if (!active) return;
+        if (response.ok) {
+          const data = await response.json();
+          setProfile(data.profile);
+          setAuthStatus('signed_in');
+        } else if (import.meta.env.DEV) {
+          setAuthStatus('demo');
+        } else {
+          setAuthStatus('signed_out');
+        }
+      })
+      .catch(() => {
+        if (active) setAuthStatus(import.meta.env.DEV ? 'demo' : 'signed_out');
+      });
+    return () => { active = false; };
+  }, []);
+
+  const handleAuthenticated = (nextProfile: UserProfile) => {
+    setProfile(nextProfile);
+    setAuthStatus('signed_in');
+  };
+
+  const handleSignOut = async () => {
+    await fetch('/api/auth?action=logout', { method: 'POST', credentials: 'same-origin' }).catch(() => undefined);
+    localStorage.removeItem('finlearn_profile');
+    setProfile(DEMO_PROFILES.max || DEMO_PROFILES.koffi);
+    setAuthStatus('signed_out');
+  };
 
   // Sauvegarde automatique du profil lors des changements
   useEffect(() => {
@@ -63,6 +107,13 @@ export const App: React.FC = () => {
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, []);
+
+  if (authStatus === 'checking') {
+    return <div className="min-h-screen grid place-items-center bg-[#F5F7FB] text-sm text-slate-500">Chargement de votre espace…</div>;
+  }
+  if (authStatus === 'signed_out') {
+    return <AccessGate onAuthenticated={handleAuthenticated} onUseDemo={import.meta.env.DEV ? () => { setProfile(DEMO_PROFILES.max); setAuthStatus('demo'); } : undefined} />;
+  }
 
   const handleSelectProfileKey = (key: string) => {
     if (DEMO_PROFILES[key]) {
@@ -103,12 +154,13 @@ export const App: React.FC = () => {
   const activeMission = activeMissionId ? GAME_MISSIONS.find((m) => m.id === activeMissionId) || null : null;
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex font-sans antialiased text-slate-800 selection:bg-blue-500 selection:text-white">
+    <div className="min-h-screen bg-[#F5F7FB] flex font-sans antialiased text-slate-800 selection:bg-blue-500 selection:text-white">
       {/* 1. Barre Latérale Gauche Sombre Style FinExpert (Fidélité 100% à la capture de référence) */}
       <Sidebar
         activeTab={activeTab}
         onSelectTab={setActiveTab}
         globalScorePercent={68}
+        canAuthor={authStatus === 'signed_in' && profile.role === 'admin'}
         isOpenMobile={isMobileSidebarOpen}
         onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
@@ -130,82 +182,116 @@ export const App: React.FC = () => {
           }}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen((prev) => !prev)}
           onNavigateHome={() => setActiveTab('dashboard')}
+          allowDemoProfiles={authStatus === 'demo'}
+          onSignOut={authStatus === 'signed_in' ? handleSignOut : undefined}
         />
 
         {/* Zone de Visualisation avec Défilement Fluide */}
-        <main className="flex-1 overflow-y-auto pb-20 lg:pb-0">
+        <main className="flex-1 overflow-y-auto pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
           {activeTab === 'dashboard' && (
             <FinExpertDashboard
               profile={profile}
               onNavigate={setActiveTab}
               onLaunchMission={(mId) => setActiveMissionId(mId)}
               onOpenDiagnostic={() => setIsDiagnosticOpen(true)}
+              onSelectPath={(pId, lId) => {
+                setSelectedPathId(pId);
+                if (lId) setInitialLessonId(lId);
+                setActiveTab('courses');
+              }}
             />
           )}
 
           {activeTab === 'courses' && (
+            <Suspense fallback={<SectionLoading />}>
             <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto">
               <CourseReader
+                userId={profile.id}
                 completedLessonIds={profile.completedLessons}
                 onLessonCompleted={handleLessonCompleted}
+                selectedPathId={selectedPathId}
+                onSelectPath={(pId) => setSelectedPathId(pId)}
+                initialLessonId={initialLessonId}
               />
             </div>
+            </Suspense>
           )}
 
           {activeTab === 'catalogue' && (
+            <Suspense fallback={<SectionLoading />}>
             <CatalogView
+              userId={profile.id}
               completedLessonIds={profile.completedLessons}
-              onSelectPath={() => setActiveTab('courses')}
+              onSelectPath={(pId, lId) => {
+                setSelectedPathId(pId);
+                if (lId) setInitialLessonId(lId);
+                setActiveTab('courses');
+              }}
               onNavigate={setActiveTab}
               onOpenDiagnostic={() => setIsDiagnosticOpen(true)}
             />
+            </Suspense>
           )}
 
           {activeTab === 'author' && (
-            <AuthorStudio />
+            <Suspense fallback={<SectionLoading />}><AuthorStudio /></Suspense>
           )}
 
           {activeTab === 'simulators' && (
+            <Suspense fallback={<SectionLoading />}>
             <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto">
               <SimulatorsHub />
             </div>
+            </Suspense>
           )}
 
           {activeTab === 'excel' && (
+            <Suspense fallback={<SectionLoading />}>
             <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto">
               <ExcelLab />
             </div>
+            </Suspense>
           )}
 
           {activeTab === 'missions' && (
+            <Suspense fallback={<SectionLoading />}>
             <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto">
               <MissionsHub
                 onLaunchMission={(mId) => setActiveMissionId(mId)}
                 completedMissionIds={profile.completedMissions}
               />
             </div>
+            </Suspense>
           )}
 
           {activeTab === 'evaluations' && (
+            <Suspense fallback={<SectionLoading />}>
             <ProgressionView
               profile={profile}
+              userId={profile.id}
               onNavigate={setActiveTab}
               onOpenDiagnostic={() => setIsDiagnosticOpen(true)}
             />
+            </Suspense>
           )}
 
           {activeTab === 'progression' && (
+            <Suspense fallback={<SectionLoading />}>
             <ProgressionView
               profile={profile}
+              userId={profile.id}
               onNavigate={setActiveTab}
               onOpenDiagnostic={() => setIsDiagnosticOpen(true)}
             />
+            </Suspense>
           )}
 
           {activeTab === 'portfolio' && (
+            <Suspense fallback={<SectionLoading />}>
             <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto">
               <PortfolioView profile={profile} />
             </div>
+            </Suspense>
           )}
 
           {activeTab === 'tutor' && (
@@ -234,11 +320,14 @@ export const App: React.FC = () => {
           )}
 
           {activeTab === 'resources' && (
+            <Suspense fallback={<SectionLoading />}>
             <CatalogView
+              userId={profile.id}
               completedLessonIds={profile.completedLessons}
               onSelectPath={() => setActiveTab('courses')}
               onNavigate={setActiveTab}
             />
+            </Suspense>
           )}
 
           {/* Pied de Page Subtil */}
@@ -258,7 +347,7 @@ export const App: React.FC = () => {
 
         {/* 3. Barre de Navigation Inférieure Mobile (Ergonomie Smartphone au Pouce) */}
         <nav
-          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200/90 px-2 py-1 flex items-center justify-around shadow-lg"
+          className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-t border-slate-200/90 px-2 pt-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] flex items-center justify-around shadow-[0_-8px_24px_rgba(15,23,42,0.08)]"
           aria-label="Navigation principale mobile"
         >
           <button

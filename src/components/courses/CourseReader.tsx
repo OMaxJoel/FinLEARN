@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { PILOT_FINANCIAL_ANALYST_PATH } from '../../data/curriculum360Data';
+import React, { useState, useEffect, useRef } from 'react';
+import { ALL_LEARNING_PATHS_360, PILOT_FINANCIAL_ANALYST_PATH } from '../../data/curriculum360Data';
 import { LEARNING_PATHS, DETAILED_LESSONS } from '../../data/coursesData';
-import { Lesson360, PathEnrollment360, SyncStatus } from '../../types/pedagogy360';
+import { Lesson360, PathEnrollment360, SyncStatus, LearningPath360 } from '../../types/pedagogy360';
 import { ProgressEngine } from '../../core/persistence/progressStore';
 import { dbPersistence } from '../../core/persistence/dbClient';
 import { PracticalActivityBridgeModal } from '../simulators/PracticalActivityBridgeModal';
@@ -30,21 +30,53 @@ import {
 } from 'lucide-react';
 
 interface CourseReaderProps {
+  userId: string;
   onLessonCompleted: (lessonId: string, xpEarned: number) => void;
   completedLessonIds: string[];
   initialLessonId?: string;
+  selectedPathId?: string;
+  onSelectPath?: (pathId: string) => void;
 }
 
 export const CourseReader: React.FC<CourseReaderProps> = ({
+  userId,
   onLessonCompleted,
   completedLessonIds,
   initialLessonId,
+  selectedPathId,
+  onSelectPath,
 }) => {
-  // Sélection du parcours (par défaut le parcours pilote 360°)
-  const [selectedPathId, setSelectedPathId] = useState<string>('PATH_FIN_ANALYST_360');
-  
-  // Aplatir toutes les leçons 360° du parcours pilote
-  const all360Lessons: Lesson360[] = PILOT_FINANCIAL_ANALYST_PATH.levels.flatMap((lvl) =>
+  // Sélection du parcours actif
+  const [pathId, setPathId] = useState<string>(selectedPathId || 'PATH_FIN_ANALYST_360');
+  const [publishedPaths, setPublishedPaths] = useState<Record<string, LearningPath360>>({});
+
+  useEffect(() => {
+    if (selectedPathId && selectedPathId !== pathId) {
+      setPathId(selectedPathId);
+    }
+  }, [selectedPathId]);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/paths?id=${encodeURIComponent(pathId)}`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Parcours distant indisponible');
+        return response.json();
+      })
+      .then(({ path }) => {
+        if (active && path?.id === pathId) {
+          setPublishedPaths((current) => ({ ...current, [pathId]: path as LearningPath360 }));
+        }
+      })
+      .catch(() => undefined);
+    return () => { active = false; };
+  }, [pathId]);
+
+  const activePath: LearningPath360 = publishedPaths[pathId] ||
+    ALL_LEARNING_PATHS_360.find((p) => p.id === pathId) || PILOT_FINANCIAL_ANALYST_PATH;
+
+  // Aplatir toutes les leçons 360° du parcours sélectionné
+  const all360Lessons: Lesson360[] = activePath.levels.flatMap((lvl) =>
     lvl.modules.flatMap((mod) => mod.chapters.flatMap((chap) => chap.lessons))
   );
 
@@ -77,6 +109,8 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
   // État du quiz
   const [quizAnswers, setQuizAnswers] = useState<Record<string, number>>({});
   const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [evaluationAnswers, setEvaluationAnswers] = useState<Record<string, number>>({});
+  const lastOpenedLesson = useRef<string | null>(null);
 
   // Notification d'état de sauvegarde (exigence Scénario J)
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'warning' | 'error' } | null>(null);
@@ -96,28 +130,39 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
   useEffect(() => {
     async function loadEnrollment() {
       const userEnrollment = await ProgressEngine.startOrResumePath(
-        'max_oura',
-        PILOT_FINANCIAL_ANALYST_PATH
+        userId,
+        activePath
       );
       setEnrollment(userEnrollment);
-      if (initialLessonId) {
+      const resumeLessonId = userEnrollment.currentLocation?.lessonId;
+      if (initialLessonId && all360Lessons.some((l) => l.id === initialLessonId)) {
         setActiveLessonId(initialLessonId);
-      } else if (userEnrollment.currentActivityId) {
+      } else if (resumeLessonId && all360Lessons.some((l) => l.id === resumeLessonId)) {
+        setActiveLessonId(resumeLessonId);
+      } else if (userEnrollment.currentActivityId && all360Lessons.some((l) => l.id === userEnrollment.currentActivityId)) {
         setActiveLessonId(userEnrollment.currentActivityId);
+      } else {
+        setActiveLessonId(all360Lessons[0]?.id || 'L_N1_M1_01');
       }
     }
     loadEnrollment();
-  }, [initialLessonId]);
+  }, [pathId, initialLessonId, userId]);
 
   // Récupération de la leçon active
   const lesson360: Lesson360 =
     all360Lessons.find((l) => l.id === activeLessonId) || all360Lessons[0];
 
-  // Marquer comme consultée lors de l'ouverture
+  // Sauvegarder la position ouverte sans compter l'ouverture comme une lecture terminée.
   useEffect(() => {
     if (enrollment && lesson360) {
-      ProgressEngine.recordLessonConsultation(enrollment, PILOT_FINANCIAL_ANALYST_PATH, lesson360)
-        .then((updated) => setEnrollment(updated));
+      if (enrollment.pathId === activePath.id) {
+        const openKey = `${userId}:${activePath.id}:${lesson360.id}`;
+        if (lastOpenedLesson.current !== openKey) {
+          lastOpenedLesson.current = openKey;
+          ProgressEngine.recordLessonOpened(enrollment, activePath, lesson360)
+            .then((updated) => setEnrollment(updated));
+        }
+      }
     }
     // Réinitialiser les inputs des exercices
     setGuidedInput('');
@@ -128,11 +173,33 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
     setAutoHintIndex(0);
     setQuizAnswers({});
     setQuizSubmitted(false);
-  }, [activeLessonId]);
+    setEvaluationAnswers({});
+  }, [activeLessonId, pathId]);
+
+  useEffect(() => {
+    if (!enrollment || enrollment.pathId !== activePath.id || !lesson360) return;
+    const openKey = `${userId}:${activePath.id}:${lesson360.id}`;
+    if (lastOpenedLesson.current === openKey) return;
+    lastOpenedLesson.current = openKey;
+    ProgressEngine.recordLessonOpened(enrollment, activePath, lesson360).then(setEnrollment);
+  }, [enrollment?.id, activePath.id, activeLessonId, userId]);
+
+  useEffect(() => {
+    if (!enrollment || enrollment.pathId !== activePath.id) return;
+    const guidedDraft = enrollment.activityRecords[lesson360.guidedExercise.id]?.savedState as { input?: string } | undefined;
+    const autonomousDraft = enrollment.activityRecords[lesson360.autonomousExercise.id]?.savedState as { input?: string } | undefined;
+    setGuidedInput(guidedDraft?.input || '');
+    setAutoInput(autonomousDraft?.input || '');
+    const evaluationDraft = moduleEvaluation && enrollment.activityRecords[moduleEvaluation.id]?.savedState as { answers?: Record<string, number> } | undefined;
+    setEvaluationAnswers(evaluationDraft?.answers || {});
+  }, [enrollment?.id, activePath.id, activeLessonId]);
 
   const isCurrentLessonValidated =
     completedLessonIds.includes(lesson360.id) ||
     enrollment?.activityRecords[lesson360.id]?.state === 'terminee';
+
+  const currentModule = activePath.levels.flatMap((level) => level.modules).find((module) => module.id === lesson360.moduleId);
+  const moduleEvaluation = currentModule?.evaluation;
 
   // Vérification de l'exercice guidé
   const handleVerifyGuidedExercise = async () => {
@@ -155,7 +222,7 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
       if (enrollment) {
         const { enrollment: nextEnrollment, saveResult } = await ProgressEngine.recordActivitySubmission(
           enrollment,
-          PILOT_FINANCIAL_ANALYST_PATH,
+          activePath,
           lesson360.guidedExercise.id,
           'guided_exercise',
           true,
@@ -170,6 +237,15 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
       }
     } else {
       setGuidedStatus('error');
+      if (enrollment) {
+        const { enrollment: updated, saveResult } = await ProgressEngine.recordActivitySubmission(
+          enrollment, activePath, lesson360.guidedExercise.id, 'guided_exercise', false, 0, lesson360.guidedExercise.rubricPoints,
+          { input: guidedInput }
+        );
+        setEnrollment(updated);
+        const saved = await saveResult;
+        if (!saved.success) setNotification({ message: saved.error || 'Votre tentative reste sur cet appareil.', type: 'warning' });
+      }
     }
   };
 
@@ -194,7 +270,7 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
       if (enrollment) {
         const { enrollment: nextEnrollment, saveResult } = await ProgressEngine.recordActivitySubmission(
           enrollment,
-          PILOT_FINANCIAL_ANALYST_PATH,
+          activePath,
           lesson360.autonomousExercise.id,
           'autonomous_exercise',
           true,
@@ -209,7 +285,80 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
       }
     } else {
       setAutoStatus('error');
+      if (enrollment) {
+        const { enrollment: updated, saveResult } = await ProgressEngine.recordActivitySubmission(
+          enrollment, activePath, lesson360.autonomousExercise.id, 'autonomous_exercise', false, 0, lesson360.autonomousExercise.rubricPoints,
+          { input: autoInput }
+        );
+        setEnrollment(updated);
+        const saved = await saveResult;
+        if (!saved.success) setNotification({ message: saved.error || 'Votre tentative reste sur cet appareil.', type: 'warning' });
+      }
     }
+  };
+
+  const handleVerifyQuiz = async () => {
+    setQuizSubmitted(true);
+    if (!enrollment) return;
+    let currentEnrollment = enrollment;
+    for (const question of lesson360.comprehensionQuiz) {
+      const selected = quizAnswers[question.id];
+      if (selected === undefined) continue;
+      const isCorrect = selected === question.correctIndex;
+      const { enrollment: updated, saveResult } = await ProgressEngine.recordActivitySubmission(
+        currentEnrollment,
+        activePath,
+        question.id,
+        'quiz',
+        isCorrect,
+        isCorrect ? 1 : 0,
+        1,
+        { selectedAnswer: selected }
+      );
+      currentEnrollment = updated;
+      await saveResult;
+    }
+    setEnrollment(currentEnrollment);
+  };
+
+  const handleVerifyModuleEvaluation = async () => {
+    if (!enrollment || !moduleEvaluation) return;
+    const answeredCount = moduleEvaluation.questions.filter((question) => evaluationAnswers[question.id] !== undefined).length;
+    if (answeredCount !== moduleEvaluation.questions.length) {
+      setNotification({ message: 'Répondez à toutes les questions avant de soumettre l’évaluation.', type: 'warning' });
+      return;
+    }
+    const correctCount = moduleEvaluation.questions.filter((question) => evaluationAnswers[question.id] === question.correctIndex).length;
+    const maxScore = 100;
+    const score = Math.round(correctCount / moduleEvaluation.questions.length * maxScore);
+    const passed = score >= moduleEvaluation.passingScorePercent;
+    const { enrollment: updated, saveResult } = await ProgressEngine.recordActivitySubmission(
+      enrollment,
+      activePath,
+      moduleEvaluation.id,
+      'evaluation',
+      passed,
+      score,
+      maxScore,
+      { answers: evaluationAnswers }
+    );
+    setEnrollment(updated);
+    const saved = await saveResult;
+    if (!saved.success) setNotification({ message: saved.error || 'Échec de la sauvegarde de l’évaluation.', type: 'warning' });
+    else setNotification({ message: passed ? `Évaluation validée : ${score}%.` : `Score : ${score}%. Le seuil de validation est ${moduleEvaluation.passingScorePercent}%. Vous pouvez réessayer.`, type: passed ? 'success' : 'warning' });
+  };
+
+  const handleMarkLessonConsulted = async () => {
+    if (!enrollment || !lesson360 || enrollment.activityRecords[lesson360.id]?.consultationDone) return;
+    const updated = await ProgressEngine.recordLessonConsultation(enrollment, activePath, lesson360);
+    setEnrollment(updated);
+    setNotification({ message: 'Lecture validée. Vous pouvez poursuivre avec les exemples et les activités pratiques.', type: 'success' });
+  };
+
+  const saveDraft = async (activityId: string, activityType: 'guided_exercise' | 'autonomous_exercise', input: string) => {
+    if (!enrollment || enrollment.pathId !== activePath.id) return;
+    const updated = await ProgressEngine.saveActivityDraft(enrollment, activePath, lesson360, activityId, activityType, { input });
+    setEnrollment(updated);
   };
 
   // Callback de validation du simulateur
@@ -221,12 +370,12 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
     savedState?: any
   ) => {
     setIsActivityModalOpen(false);
-    onLessonCompleted(lesson360.id, score);
+    if (isSuccess) onLessonCompleted(lesson360.id, score);
 
     if (enrollment) {
       const { enrollment: nextEnrollment, saveResult } = await ProgressEngine.recordActivitySubmission(
         enrollment,
-        PILOT_FINANCIAL_ANALYST_PATH,
+        activePath,
         activityId,
         'simulator',
         isSuccess,
@@ -235,8 +384,10 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
         savedState
       );
       setEnrollment(nextEnrollment);
-      setNotification({ message: `Activité pratique enregistrée avec succès (+${score} pts) !`, type: 'success' });
-      await saveResult;
+      const saved = await saveResult;
+      setNotification(saved.success
+        ? { message: `Activité pratique enregistrée (${score}/${maxScore}).`, type: 'success' }
+        : { message: saved.error || 'L’activité est conservée localement, mais la synchronisation a échoué.', type: 'warning' });
     }
   };
 
@@ -313,22 +464,44 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
 
       {/* 2. Navigation de Leçons Latérale et Zone de Lecture Centrale */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Colonne Navigation des 10 Niveaux / Modules (4 cols) */}
+        {/* Colonne Navigation des Niveaux / Modules (4 cols) */}
         <div className="lg:col-span-4 bg-white rounded-3xl p-4 sm:p-5 border border-slate-200/80 shadow-sm space-y-4 max-h-[85vh] overflow-y-auto">
-          <div className="border-b border-slate-100 pb-3">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">
-              Parcours Professionnel 360°
-            </span>
-            <h2 className="text-sm font-extrabold text-slate-900 leading-snug">
-              {PILOT_FINANCIAL_ANALYST_PATH.title}
-            </h2>
-            <div className="text-[11px] text-slate-500 mt-1">
-              10 Niveaux • 10 Modules • 65 Heures
+          {/* Sélecteur de Parcours 360° */}
+          <div className="border-b border-slate-100 pb-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600">
+                Parcours Professionnel 360°
+              </span>
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                v{activePath.version}
+              </span>
+            </div>
+
+            <select
+              value={activePath.id}
+              onChange={(e) => {
+                const newId = e.target.value;
+                setPathId(newId);
+                if (onSelectPath) onSelectPath(newId);
+              }}
+              className="w-full bg-[#F8FAFC] border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20"
+            >
+              {ALL_LEARNING_PATHS_360.filter((p) => p.status === 'published' || p.id === pathId).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title} ({p.levels.length} Niveaux - {p.estimatedHours}h)
+                </option>
+              ))}
+            </select>
+
+            <div className="text-[11px] text-slate-500 pt-0.5">
+              {activePath.levels.length} Niveaux •{' '}
+              {activePath.levels.reduce((acc, l) => acc + l.modules.length, 0)} Modules •{' '}
+              {activePath.estimatedHours} Heures
             </div>
           </div>
 
           <div className="space-y-3">
-            {PILOT_FINANCIAL_ANALYST_PATH.levels.map((level) => (
+            {activePath.levels.map((level) => (
               <div key={level.id} className="space-y-1">
                 <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 py-1">
                   {level.title}
@@ -536,6 +709,20 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
             </div>
           </div>
 
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-4">
+            <div>
+              <p className="text-sm font-bold text-blue-950">Terminez la lecture de cette leçon</p>
+              <p className="mt-1 text-xs text-blue-800">La leçon ne compte dans votre progression qu’après cette confirmation.</p>
+            </div>
+            <button
+              onClick={() => void handleMarkLessonConsulted()}
+              disabled={Boolean(enrollment?.activityRecords[lesson360.id]?.consultationDone)}
+              className="shrink-0 rounded-xl bg-blue-700 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-800 disabled:cursor-default disabled:bg-emerald-700"
+            >
+              {enrollment?.activityRecords[lesson360.id]?.consultationDone ? 'Lecture validée' : 'J’ai terminé la lecture'}
+            </button>
+          </div>
+
           {/* Exercice Guidé (Pas à pas) */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
@@ -568,6 +755,7 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
                 type="text"
                 value={guidedInput}
                 onChange={(e) => setGuidedInput(e.target.value)}
+                onBlur={(e) => void saveDraft(lesson360.guidedExercise.id, 'guided_exercise', e.target.value)}
                 placeholder="Votre réponse (ex : montant en FCFA)"
                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-hidden focus:border-blue-500"
               />
@@ -624,6 +812,7 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
                 type="text"
                 value={autoInput}
                 onChange={(e) => setAutoInput(e.target.value)}
+                onBlur={(e) => void saveDraft(lesson360.autonomousExercise.id, 'autonomous_exercise', e.target.value)}
                 placeholder="Votre réponse calculée"
                 className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-hidden focus:border-purple-500"
               />
@@ -718,13 +907,67 @@ export const CourseReader: React.FC<CourseReaderProps> = ({
 
             {!quizSubmitted && (
               <button
-                onClick={() => setQuizSubmitted(true)}
+                onClick={() => void handleVerifyQuiz()}
+                disabled={lesson360.comprehensionQuiz.some((question) => quizAnswers[question.id] === undefined)}
                 className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs transition"
               >
                 Vérifier le quiz
               </button>
             )}
           </div>
+
+          {moduleEvaluation && (
+            <section className="rounded-3xl border border-indigo-200 bg-white p-6 sm:p-8 shadow-sm space-y-5">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-indigo-600">Évaluation de fin de module</p>
+                  <h2 className="mt-1 text-lg font-extrabold text-slate-900">{moduleEvaluation.title}</h2>
+                  <p className="mt-1 text-xs text-slate-500">Seuil de validation : {moduleEvaluation.passingScorePercent}%</p>
+                </div>
+                {enrollment?.activityRecords[moduleEvaluation.id]?.attempts ? (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">
+                    Dernier meilleur score : {Math.round((enrollment.activityRecords[moduleEvaluation.id].score / enrollment.activityRecords[moduleEvaluation.id].maxScore) * 100)}%
+                  </span>
+                ) : null}
+              </div>
+              {moduleEvaluation.questions.map((question, questionIndex) => (
+                <fieldset key={question.id} className="space-y-2 border-t border-slate-100 pt-4">
+                  <legend className="mb-2 text-sm font-semibold text-slate-800">{questionIndex + 1}. {question.question}</legend>
+                  {question.options.map((option, optionIndex) => {
+                    const selected = evaluationAnswers[question.id] === optionIndex;
+                    const record = enrollment?.activityRecords[moduleEvaluation.id];
+                    const isSubmitted = (record?.attempts || 0) > 0;
+                    const correct = optionIndex === question.correctIndex;
+                    return (
+                      <button
+                        key={optionIndex}
+                        type="button"
+                        onClick={() => setEvaluationAnswers((answers) => ({ ...answers, [question.id]: optionIndex }))}
+                        className={`w-full rounded-xl border p-3 text-left text-xs transition ${
+                          isSubmitted && correct ? 'border-emerald-300 bg-emerald-50 text-emerald-900' :
+                          isSubmitted && selected ? 'border-rose-300 bg-rose-50 text-rose-900' :
+                          selected ? 'border-indigo-400 bg-indigo-50 text-indigo-950' : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    );
+                  })}
+                  {(enrollment?.activityRecords[moduleEvaluation.id]?.attempts || 0) > 0 && (
+                    <p className="rounded-xl bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">{question.explanation}</p>
+                  )}
+                </fieldset>
+              ))}
+              <button
+                type="button"
+                onClick={() => void handleVerifyModuleEvaluation()}
+                disabled={enrollment?.activityRecords[moduleEvaluation.id]?.state === 'terminee'}
+                className="rounded-xl bg-indigo-700 px-5 py-3 text-xs font-bold text-white hover:bg-indigo-800 disabled:cursor-default disabled:bg-emerald-700"
+              >
+                {enrollment?.activityRecords[moduleEvaluation.id]?.state === 'terminee' ? 'Module validé' : 'Soumettre l’évaluation'}
+              </button>
+            </section>
+          )}
 
           {/* Résumé des Notions & Recommandation Suite */}
           <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-3">

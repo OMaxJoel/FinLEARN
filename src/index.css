@@ -3,14 +3,47 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light;
+    --page-bg: #f5f7fb;
+    --surface: #ffffff;
+    --line: #e7ebf2;
+    --ink: #172033;
+    --muted: #68758a;
+    --brand: #1769e8;
+  }
+
   body {
-    @apply bg-slate-50 text-slate-800 antialiased font-sans;
+    @apply text-slate-800 antialiased font-sans;
+    background: var(--page-bg);
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  button, input, select, textarea { font: inherit; }
+
+  button:focus-visible, [role="button"]:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 3px solid rgb(37 99 235 / 35%);
+    outline-offset: 2px;
   }
 
   /* Chiffres à espacement fixe pour alignement des tableaux financiers */
   .tabular-nums {
     font-variant-numeric: tabular-nums;
+  }
+}
+
+@layer components {
+  .dashboard-page {
+    background-image: radial-gradient(circle at 1px 1px, rgb(148 163 184 / 10%) 1px, transparent 0);
+    background-size: 24px 24px;
+  }
+
+  .dashboard-hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: linear-gradient(105deg, rgb(7 16 38 / 30%) 0%, transparent 70%);
   }
 }
 
@@ -31,6 +64,15 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Grille Excel */

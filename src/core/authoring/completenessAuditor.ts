@@ -61,7 +61,7 @@ export class CompletenessAuditor {
       missingElements.push('Moins de 3 compétences ciblées par le parcours.');
     }
 
-    // Critère 4 : Conformité des Leçons aux 26 critères pédagogiques (Section 3.2)
+    // Critère 4 : seuils mesurables de profondeur et de complétude des leçons
     let lessonsWithDeepTheory = 0;
     let lessonsWithSimpleExample = 0;
     let lessonsWithEnterpriseCase = 0;
@@ -71,13 +71,14 @@ export class CompletenessAuditor {
     let lessonsWithQuiz = 0;
 
     for (const lesson of allLessons) {
-      if (lesson.theorySections && lesson.theorySections.length > 0) lessonsWithDeepTheory++;
-      if (lesson.simpleExample?.stepByStepSolution?.length) lessonsWithSimpleExample++;
+      const theoryWords = (lesson.theorySections || []).reduce((sum, section) => sum + section.content.trim().split(/\s+/).filter(Boolean).length, 0);
+      if (lesson.theorySections?.length >= 3 && theoryWords >= 150 && lesson.theorySections.every((section) => section.content.trim().length >= 120)) lessonsWithDeepTheory++;
+      if (lesson.simpleExample?.stepByStepSolution?.length >= 3 && lesson.intermediateExample?.stepByStepSolution?.length >= 3) lessonsWithSimpleExample++;
       if (lesson.enterpriseCase?.financialStatements && lesson.enterpriseCase?.realWorldResolution) lessonsWithEnterpriseCase++;
       if (lesson.guidedExercise?.detailedCorrection) lessonsWithGuidedExercise++;
       if (lesson.autonomousExercise?.expectedAnswer !== undefined) lessonsWithAutonomousExercise++;
-      if (lesson.practicalActivity?.targetComponentId) lessonsWithPracticalSimulator++;
-      if (lesson.comprehensionQuiz && lesson.comprehensionQuiz.length >= 1) lessonsWithQuiz++;
+      if (lesson.practicalActivity?.targetComponentId && lesson.practicalActivity?.assessment) lessonsWithPracticalSimulator++;
+      if (lesson.comprehensionQuiz && lesson.comprehensionQuiz.length >= 2) lessonsWithQuiz++;
     }
 
     const lessonCompletenessRate = totalLessons > 0 ? (
@@ -93,38 +94,38 @@ export class CompletenessAuditor {
     const lessonsFullyCompliant = lessonCompletenessRate >= 0.85;
     criteria.push({
       id: 'CRIT_LESSON_CONTENT_DEPTH',
-      label: 'Profondeur pédagogique des leçons (26 critères du paragraphe 3.2)',
+      label: 'Profondeur pédagogique mesurable des leçons',
       category: 'pedagogy',
       isMet: lessonsFullyCompliant,
-      details: `Score de complétude moyen des leçons : ${Math.round(lessonCompletenessRate * 100)}%. (${lessonsWithEnterpriseCase}/${totalLessons} cas réels d'entreprise, ${lessonsWithPracticalSimulator}/${totalLessons} simulateurs reliés).`,
+      details: `Score de conformité réel : ${Math.round(lessonCompletenessRate * 100)}%. Théorie approfondie ${lessonsWithDeepTheory}/${totalLessons}, exemples détaillés ${lessonsWithSimpleExample}/${totalLessons}, cas contextualisés ${lessonsWithEnterpriseCase}/${totalLessons}, exercices guidés ${lessonsWithGuidedExercise}/${totalLessons}, transferts autonomes ${lessonsWithAutonomousExercise}/${totalLessons}, activités évaluées ${lessonsWithPracticalSimulator}/${totalLessons}, quiz de 2 questions ${lessonsWithQuiz}/${totalLessons}.`,
       weight: 25,
     });
     if (!lessonsFullyCompliant) {
-      missingElements.push('Certaines leçons manquent d\'exercices guidés, de cas réels d\'entreprise ou d\'exercices autonomes.');
-      recommendations.push('Compléter les leçons déficientes avec des exemples chiffrés vérifiables en FCFA et des cas concrets.');
+      missingElements.push('Certaines leçons n’atteignent pas les seuils de profondeur : 3 sections substantielles, 150 mots de théorie, exemples détaillés, 2 questions de quiz, cas et activité pratique évaluée.');
+      recommendations.push('Compléter chaque leçon avec un raisonnement développé, des exemples vérifiables, un transfert autonome et une validation d’activité fondée sur une réponse contrôlée.');
     }
 
     // Critère 5 : Activités pratiques et simulateurs connectés
-    const practicalActivitiesCount = allLessons.filter((l) => l.practicalActivity?.id).length;
+    const practicalActivitiesCount = allLessons.filter((l) => l.practicalActivity?.id && l.practicalActivity.assessment).length;
     const hasEnoughPracticals = practicalActivitiesCount >= Math.min(totalLessons, 5);
     criteria.push({
       id: 'CRIT_PRACTICE_SIMULATORS',
       label: 'Connexion directe aux simulateurs et missions déterministes',
       category: 'practice',
       isMet: hasEnoughPracticals,
-      details: `${practicalActivitiesCount} activité(s) pratique(s) outillée(s) par simulateurs ou jeux.`,
+      details: `${practicalActivitiesCount}/${totalLessons} activité(s) pratique(s) disposent d’une évaluation vérifiable.`,
       weight: 20,
     });
 
     // Critère 6 : Évaluations de fin de module avec barème et seuil
-    const modulesWithEvaluation = allModules.filter((m) => m.evaluation && m.evaluation.passingScorePercent >= 60).length;
+    const modulesWithEvaluation = allModules.filter((m) => m.evaluation && m.evaluation.passingScorePercent >= 60 && m.evaluation.questions.length >= 5).length;
     const hasEvaluations = modulesWithEvaluation === totalModules && totalModules > 0;
     criteria.push({
       id: 'CRIT_MODULE_EVALUATIONS',
       label: 'Évaluations certifiantes dans chaque module avec barème formel',
       category: 'evaluation',
       isMet: hasEvaluations,
-      details: `${modulesWithEvaluation}/${totalModules} module(s) évalué(s).`,
+      details: `${modulesWithEvaluation}/${totalModules} module(s) ont un seuil et au moins 5 questions d’évaluation.`,
       weight: 10,
     });
 

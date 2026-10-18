@@ -35,6 +35,7 @@ interface SidebarProps {
   globalScorePercent?: number;
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
+  canAuthor?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -43,12 +44,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
   globalScorePercent = 68,
   isOpenMobile = false,
   onCloseMobile,
+  canAuthor = false,
 }) => {
   const navItems: { id: NavigationTab; label: string; icon: React.ReactNode; isNew?: boolean }[] = [
     { id: 'dashboard', label: 'Accueil', icon: <Home className="w-4 h-4" /> },
     { id: 'courses', label: 'Mes parcours', icon: <GraduationCap className="w-4 h-4" /> },
     { id: 'catalogue', label: 'Catalogue', icon: <Layers className="w-4 h-4" /> },
-    { id: 'author', label: 'Studio Auteur', icon: <Sliders className="w-4 h-4 text-sky-400" />, isNew: true },
+    ...(canAuthor ? [{ id: 'author' as const, label: 'Studio Auteur', icon: <Sliders className="w-4 h-4 text-sky-400" />, isNew: true }] : []),
     { id: 'simulators', label: 'Simulateurs', icon: <Calculator className="w-4 h-4" /> },
     { id: 'missions', label: 'Jeux & Missions', icon: <Gamepad2 className="w-4 h-4" /> },
     { id: 'excel', label: 'Laboratoire Excel', icon: <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> },
@@ -137,7 +139,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* 2. Liste de Navigation */}
-      <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto no-scrollbar text-xs">
+      <nav className="flex-1 px-3 py-3 space-y-1.5 overflow-y-auto no-scrollbar text-[13px]" aria-label="Navigation principale">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
 
@@ -148,10 +150,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onSelectTab(item.id);
                 onCloseMobile?.();
               }}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium transition-all ${
+              aria-current={isActive ? 'page' : undefined}
+              className={`w-full flex items-center justify-between px-3.5 py-3 rounded-xl font-medium transition-all ${
                 isActive
-                  ? 'bg-[#0070F3] text-white font-bold shadow-md shadow-blue-500/30'
-                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
+                  ? 'bg-blue-500/15 text-white font-bold ring-1 ring-inset ring-blue-400/25 shadow-sm shadow-blue-950/20'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/70'
               }`}
             >
               <div className="flex items-center gap-3">

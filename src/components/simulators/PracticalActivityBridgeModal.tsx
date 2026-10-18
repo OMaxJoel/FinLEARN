@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PracticalActivityRef } from '../../types/pedagogy360';
 import { GAME_MISSIONS } from '../../data/gameMissionsData';
 import { AccountingSimulator } from './AccountingSimulator';
@@ -44,15 +44,33 @@ export const PracticalActivityBridgeModal: React.FC<PracticalActivityBridgeModal
   onComplete,
   isAlreadyCompleted = false,
 }) => {
+  const [hasValidated, setHasValidated] = useState(isAlreadyCompleted);
+  const [assessmentAnswer, setAssessmentAnswer] = useState('');
+  const [assessmentFeedback, setAssessmentFeedback] = useState<'correct' | 'incorrect' | null>(null);
+  useEffect(() => {
+    setHasValidated(isAlreadyCompleted);
+    setAssessmentAnswer('');
+    setAssessmentFeedback(null);
+  }, [isOpen, activity?.id, isAlreadyCompleted]);
+
   if (!isOpen || !activity) return null;
 
-  const [hasValidated, setHasValidated] = useState(isAlreadyCompleted);
-
   const handleValidateActivity = () => {
+    const assessment = activity.assessment;
+    if (!assessment) return;
+    const answer = Number(assessmentAnswer.trim().replace(',', '.'));
+    if (!assessmentAnswer.trim() || !Number.isFinite(answer)) {
+      setAssessmentFeedback('incorrect');
+      return;
+    }
+    const isCorrect = Math.abs(answer - assessment.expectedAnswer) <= (assessment.tolerance ?? 0);
+    setAssessmentFeedback(isCorrect ? 'correct' : 'incorrect');
+    if (!isCorrect) return;
     setHasValidated(true);
     onComplete(activity.id, true, activity.rubricPoints, activity.rubricPoints, {
       validatedAt: new Date().toISOString(),
       targetComponentId: activity.targetComponentId,
+      assessmentAnswer: answer,
     });
   };
 
@@ -132,13 +150,17 @@ export const PracticalActivityBridgeModal: React.FC<PracticalActivityBridgeModal
 
           <div className="flex items-center gap-3">
             {!hasValidated ? (
-              <button
-                onClick={handleValidateActivity}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-2"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Valider mes résultats</span>
-              </button>
+              activity.assessment ? (
+                <button
+                  onClick={handleValidateActivity}
+                  className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition flex items-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Vérifier ma réponse</span>
+                </button>
+              ) : (
+                <span className="px-3 py-2 rounded-xl bg-amber-950/70 text-amber-300 border border-amber-500/40 text-xs font-bold">Validation indisponible</span>
+              )
             ) : (
               <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-950/70 text-emerald-400 border border-emerald-500/40 text-xs font-bold">
                 <CheckCircle2 className="w-4 h-4 text-emerald-400" />
@@ -164,9 +186,32 @@ export const PracticalActivityBridgeModal: React.FC<PracticalActivityBridgeModal
             <span>{activity.completionCriteria.description}</span>
           </div>
           <div className="text-[11px] text-slate-500 italic">
-            Les modifications et calculs effectués dans ce laboratoire alimentent votre score de compétences.
+            La validation porte sur la réponse vérifiable ci-dessous. Le simulateur reste un atelier d’entraînement.
           </div>
         </div>
+
+        {activity.assessment && (
+          <div className="px-5 py-4 bg-white border-b border-slate-200 shrink-0">
+            <label htmlFor="practical-answer" className="block text-sm font-bold text-slate-900 mb-2">{activity.assessment.prompt}</label>
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <input
+                  id="practical-answer"
+                  type="number"
+                  value={assessmentAnswer}
+                  onChange={(event) => { setAssessmentAnswer(event.target.value); setAssessmentFeedback(null); }}
+                  disabled={hasValidated}
+                  className="w-48 rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                  aria-describedby="practical-feedback"
+                />
+                {activity.assessment.unit && <span className="text-sm text-slate-500">{activity.assessment.unit}</span>}
+              </div>
+              <span id="practical-feedback" aria-live="polite" className={`text-sm ${assessmentFeedback === 'correct' ? 'text-emerald-700' : assessmentFeedback === 'incorrect' ? 'text-rose-700' : 'text-slate-500'}`}>
+                {assessmentFeedback === 'correct' ? activity.assessment.correction : assessmentFeedback === 'incorrect' ? 'Réponse incorrecte ou manquante. Reprenez les données et réessayez.' : 'Résolvez le cas, puis vérifiez votre résultat.'}
+              </span>
+            </div>
+          </div>
+        )}
 
         {/* Contenu Déterministe du Simulateur */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#F8FAFC]">

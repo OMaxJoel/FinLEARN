@@ -42,6 +42,9 @@ function vercelApiDevPlugin() {
           if (endpoint === 'health') {
             const healthHandler = (await import('./api/health')).default;
             return await healthHandler(req, res);
+          } else if (endpoint === 'auth') {
+            const authHandler = (await import('./api/auth')).default;
+            return await authHandler(req, res);
           } else if (endpoint === 'progress') {
             const progressHandler = (await import('./api/progress')).default;
             return await progressHandler(req, res);

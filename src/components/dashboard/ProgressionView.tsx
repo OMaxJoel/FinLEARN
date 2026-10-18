@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../../types/pedagogy';
 import { NavigationTab } from '../common/Sidebar';
+import { dbPersistence } from '../../core/persistence/dbClient';
+import { PathEnrollment360 } from '../../types/pedagogy360';
+import { ALL_LEARNING_PATHS_360, MASTER_COMPETENCIES_360 } from '../../data/curriculum360Data';
 import {
   TrendingUp,
   Award,
@@ -15,114 +18,104 @@ import {
   BarChart3,
   Calendar,
   Layers,
+  Calculator,
+  ShieldCheck,
+  Filter,
 } from 'lucide-react';
 
 interface ProgressionViewProps {
   profile: UserProfile;
+  userId: string;
   onNavigate: (tab: NavigationTab) => void;
   onOpenDiagnostic: () => void;
 }
 
 export const ProgressionView: React.FC<ProgressionViewProps> = ({
   profile,
+  userId,
   onNavigate,
   onOpenDiagnostic,
 }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'competencies' | 'badges'>('overview');
+  const [selectedPathFilter, setSelectedPathFilter] = useState<string>('ALL');
+  const [enrollments, setEnrollments] = useState<PathEnrollment360[]>([]);
 
-  // Les 9 Compétences Clés de la Plateforme (Cahiers des charges)
-  const competencies = [
-    {
-      id: 'COMPT_OHADA',
-      title: 'Comptabilité Générale & SYSCOHADA',
-      domain: 'Comptabilité',
-      progress: profile.completedLessons.filter((l) => l.startsWith('C1')).length >= 2 ? 85 : 40,
-      level: 'Avancé',
-      description: 'Partie double, balance générale, liasse fiscale, clôture mensuelle et régularisations.',
-      skills: ['Équation bilancielle', 'Grand Livre & Balances', 'Amortissements & Provisions', 'États financiers OHADA'],
-      color: 'emerald',
-    },
-    {
-      id: 'ANAL_FIN',
-      title: 'Analyse Financière & Diagnostic',
-      domain: 'Finance',
-      progress: profile.completedLessons.filter((l) => l.startsWith('C2')).length >= 1 ? 75 : 30,
-      level: 'Avancé',
-      description: 'FRNG, BFR, Trésorerie nette, SIG, ratios de rentabilité et note de synthèse bancaire.',
-      skills: ['Équilibre fonctionnel', 'Ratios de liquidité', 'Rentabilité économique (ROA/ROE)', 'Comité de crédit'],
-      color: 'blue',
-    },
-    {
-      id: 'EXCEL_LAB',
-      title: 'Modélisation Excel du Débutant à l\'Expert',
-      domain: 'Outils & Données',
-      progress: profile.completedLessons.filter((l) => l.startsWith('C3')).length >= 1 ? 80 : 35,
-      level: 'Expert',
-      description: 'Références absolues ($), RECHERCHEX, INDEX/EQUIV, Tableaux Croisés Dynamiques et audit de formules.',
-      skills: ['Architecture sans constante en dur', 'Formules matricielles & lookup', 'TCD multidimensionnels', 'Audit de formules cycliques'],
-      color: 'sky',
-    },
-    {
-      id: 'GEST_PERF',
-      title: 'Contrôle de Gestion & Pilotage Budgétaire',
-      domain: 'Pilotage',
-      progress: profile.completedLessons.filter((l) => l.startsWith('C4')).length >= 1 ? 65 : 20,
-      level: 'Opérationnel',
-      description: 'Seuil de rentabilité, point mort en jours, marge sur coût variable, budget flexible et analyse des écarts.',
-      skills: ['Typologie des coûts (Fixes/Variables)', 'Calcul du point mort', 'Budget flexible', 'Décomposition Volume/Prix/Coût'],
-      color: 'purple',
-    },
-    {
-      id: 'FIN_INVEST',
-      title: 'Finance d\'Entreprise & Choix d\'Investissement',
-      domain: 'Finance',
-      progress: profile.completedLessons.filter((l) => l.startsWith('C5')).length >= 1 ? 70 : 25,
-      level: 'Avancé',
-      description: 'VAN, TRI, Indice de Profitabilité, Payback actualisé, CMPC/WACC et rationnement du capital.',
-      skills: ['Flux nets de trésorerie', 'Calcul du CMPC/WACC', 'VAN & TRI comparés', 'Rationnement sous contrainte'],
-      color: 'amber',
-    },
-    {
-      id: 'TRES_STRESS',
-      title: 'Gestion & Prévision de Trésorerie',
-      domain: 'Trésorerie',
-      progress: profile.completedMissions.includes('MISSION_05') ? 70 : 30,
-      level: 'Intermédiaire',
-      description: 'Plan de trésorerie glissant 13 semaines, stress tests de liquidité, négociation de découverts.',
-      skills: ['Plan glissant 13 semaines', 'Stress-testing BFR', 'Gestion des tirages bancaires', 'Arbitrage encaissements'],
-      color: 'rose',
-    },
-    {
-      id: 'COURT_CIMA',
-      title: 'Finance du Courtage en Assurance (CIMA)',
-      domain: 'Assurance & Risque',
-      progress: profile.completedLessons.filter((l) => l.startsWith('C7')).length >= 1 ? 60 : 15,
-      level: 'Opérationnel',
-      description: 'Modèle économique du courtier, commissions d\'apport, Article 13 CIMA, réconciliation des bordereaux.',
-      skills: ['Décomposition prime brute / nette', 'Taux de commission par branche', 'Règle CIMA Art. 13 (encaissement)', 'Rapprochement comptable'],
-      color: 'indigo',
-    },
-    {
-      id: 'ZONE_OHADA',
-      title: 'Contexte Économique CI & Espace UEMOA',
-      domain: 'Réglementaire',
-      progress: 65,
-      level: 'Opérationnel',
-      description: 'Réglementation fiscale ivoirienne (TVA 18%, AIRSI), secteur bancaire BCEAO et marché financier BRVM.',
-      skills: ['Fiscalité des entreprises CI', 'Ratios prudentiels BCEAO', 'Mécanique de cotation BRVM', 'Conformité douanière & devises'],
-      color: 'teal',
-    },
-    {
-      id: 'REPORT_MULTI',
-      title: 'Reporting Multi-Entités & Consolidation',
-      domain: 'Comptabilité Groupe',
-      progress: profile.completedMissions.includes('MISSION_06') ? 55 : 20,
-      level: 'Intermédiaire',
-      description: 'Intégration globale, élimination des opérations intra-groupe et conversion de devises ouest-africaines.',
-      skills: ['Périmètre de consolidation', 'Élimination des créances/dettes réciproques', 'Calcul des minoritaires', 'Harmonisation comptable'],
-      color: 'cyan',
-    },
-  ];
+  useEffect(() => {
+    async function loadData() {
+      const data = await dbPersistence.getAllUserEnrollments(userId);
+      setEnrollments(data);
+    }
+    loadData();
+  }, [userId]);
+
+  const relevantEnrollments = selectedPathFilter === 'ALL'
+    ? enrollments
+    : enrollments.filter((e) => e.pathId === selectedPathFilter);
+
+  const consultationPercent = relevantEnrollments.length > 0
+    ? Math.round(relevantEnrollments.reduce((acc, e) => acc + e.consultationProgressPercent, 0) / relevantEnrollments.length)
+    : 0;
+
+  const practicalPercent = relevantEnrollments.length > 0
+    ? Math.round(relevantEnrollments.reduce((acc, e) => acc + e.practicalActivitiesProgressPercent, 0) / relevantEnrollments.length)
+    : 0;
+
+  const evaluationPercent = relevantEnrollments.length > 0
+    ? Math.round(relevantEnrollments.reduce((acc, e) => acc + e.evaluationScorePercent, 0) / relevantEnrollments.length)
+    : 0;
+
+  const competenciesPercent = relevantEnrollments.length > 0
+    ? Math.round(relevantEnrollments.reduce((acc, e) => acc + e.competenciesMasteryPercent, 0) / relevantEnrollments.length)
+    : 0;
+
+  const validatedCodes = new Set(enrollments.flatMap((e) => e.validatedCompetencyCodes || []));
+
+  const getCompetencyProgress = (code: string) => {
+    let totalActivities = 0;
+    let completedActivities = 0;
+    for (const enrollment of enrollments) {
+      const path = ALL_LEARNING_PATHS_360.find((candidate) => candidate.id === enrollment.pathId);
+      const modules = path?.levels.flatMap((level) => level.modules).filter((module) => module.competencyCodes.includes(code)) || [];
+      for (const module of modules) {
+        for (const lesson of module.chapters.flatMap((chapter) => chapter.lessons)) {
+          const activityIds = [lesson.guidedExercise?.id, lesson.autonomousExercise?.id, lesson.practicalActivity?.id].filter(Boolean) as string[];
+          for (const activityId of activityIds) {
+            totalActivities += 1;
+            if (enrollment.activityRecords[activityId]?.state === 'terminee') completedActivities += 1;
+          }
+        }
+      }
+    }
+    return totalActivities > 0 ? Math.round(completedActivities / totalActivities * 100) : 0;
+  };
+
+  // Référentiel des Compétences Clés synchronisé avec MASTER_COMPETENCIES_360
+  const competencies = MASTER_COMPETENCIES_360.map((comp) => {
+    const isValidated = validatedCodes.has(comp.code);
+    const progress = isValidated ? 100 : getCompetencyProgress(comp.code);
+    return {
+      id: comp.code,
+      title: comp.title,
+      domain: comp.domain.toUpperCase(),
+      progress,
+      level: isValidated ? 'Validé' : 'En acquisition',
+      description: comp.description,
+      skills: comp.subCompetencies,
+      isValidated,
+      color:
+        comp.domain === 'finance'
+          ? 'blue'
+          : comp.domain === 'comptabilite'
+          ? 'emerald'
+          : comp.domain === 'assurance'
+          ? 'indigo'
+          : comp.domain === 'excel'
+          ? 'sky'
+          : comp.domain === 'controle'
+          ? 'purple'
+          : 'amber',
+    };
+  });
 
   // Badges Réalisés et À Débloquer
   const badges = [
@@ -200,9 +193,9 @@ export const ProgressionView: React.FC<ProgressionViewProps> = ({
     },
   ];
 
-  const totalProgressAverage = Math.round(
-    competencies.reduce((acc, c) => acc + c.progress, 0) / competencies.length
-  );
+  const totalProgressAverage = competencies.length > 0
+    ? Math.round(competencies.reduce((acc, c) => acc + c.progress, 0) / competencies.length)
+    : 0;
 
   return (
     <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-fadeIn">
@@ -305,40 +298,97 @@ export const ProgressionView: React.FC<ProgressionViewProps> = ({
       {/* 3. Contenu de l'onglet actif */}
       {activeTab === 'overview' && (
         <div className="space-y-6">
-          {/* Cartes Métriques Clés */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs">
-              <span className="text-xs font-bold text-slate-400 block mb-1">Leçons Terminées</span>
-              <div className="text-2xl font-black text-slate-800">{profile.completedLessons.length} / 12</div>
-              <div className="text-[11px] text-emerald-600 font-medium mt-1 flex items-center gap-1">
+          {/* Sélecteur de Parcours & 4 Dimensions Non-Confondus */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-blue-600" />
+              <span className="text-xs font-bold text-slate-700">Filtrer par parcours :</span>
+            </div>
+            <select
+              value={selectedPathFilter}
+              onChange={(e) => setSelectedPathFilter(e.target.value)}
+              className="text-xs bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="ALL">Tous les parcours (Vision consolidée)</option>
+              {ALL_LEARNING_PATHS_360.filter((p) => p.status === 'published' || enrollments.some((enrollment) => enrollment.pathId === p.id)).map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Cartes Métriques Clés (Directive Pédagogique 360°) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Dimension 1 : Consultation théorique */}
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500">Consultation théorique</span>
+                <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
+                  <BookOpen className="w-3.5 h-3.5" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-slate-900 font-mono">{consultationPercent}%</div>
+              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div className="bg-blue-600 h-full rounded-full transition-all duration-300" style={{ width: `${consultationPercent}%` }} />
+              </div>
+              <div className="text-[11px] text-blue-600 font-medium flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Validation continue</span>
+                <span>Leçons et théories étudiées</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs">
-              <span className="text-xs font-bold text-slate-400 block mb-1">Missions Validées</span>
-              <div className="text-2xl font-black text-slate-800">{profile.completedMissions.length} / 9</div>
-              <div className="text-[11px] text-blue-600 font-medium mt-1 flex items-center gap-1">
+            {/* Dimension 2 : Activités pratiques */}
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500">Activités pratiques</span>
+                <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+                  <Calculator className="w-3.5 h-3.5" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-slate-900 font-mono">{practicalPercent}%</div>
+              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div className="bg-purple-600 h-full rounded-full transition-all duration-300" style={{ width: `${practicalPercent}%` }} />
+              </div>
+              <div className="text-[11px] text-purple-600 font-medium flex items-center gap-1">
                 <Sparkles className="w-3.5 h-3.5" />
-                <span>Simulations réelles</span>
+                <span>Simulateurs et exercices validés</span>
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs">
-              <span className="text-xs font-bold text-slate-400 block mb-1">Rythme Hebdomadaire</span>
-              <div className="text-2xl font-black text-slate-800">{profile.weeklyHours}h / sem</div>
-              <div className="text-[11px] text-slate-500 font-medium mt-1">Objectif recommandé : 12h</div>
+            {/* Dimension 3 : Score aux évaluations */}
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500">Score évaluations</span>
+                <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <Award className="w-3.5 h-3.5" />
+                </div>
+              </div>
+              <div className="text-2xl font-black text-slate-900 font-mono">{evaluationPercent}%</div>
+              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div className="bg-emerald-600 h-full rounded-full transition-all duration-300" style={{ width: `${evaluationPercent}%` }} />
+              </div>
+              <div className="text-[11px] text-emerald-600 font-medium flex items-center gap-1">
+                <Target className="w-3.5 h-3.5" />
+                <span>Moyenne quiz et examens</span>
+              </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs">
-              <span className="text-xs font-bold text-slate-400 block mb-1">Badges Débloqués</span>
-              <div className="text-2xl font-black text-amber-500">
-                {badges.filter((b) => b.unlocked).length} / {badges.length}
+            {/* Dimension 4 : Maîtrise des compétences */}
+            <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-2xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500">Maîtrise compétences</span>
+                <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                </div>
               </div>
-              <div className="text-[11px] text-amber-600 font-medium mt-1 flex items-center gap-1">
+              <div className="text-2xl font-black text-slate-900 font-mono">{competenciesPercent}%</div>
+              <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                <div className="bg-amber-500 h-full rounded-full transition-all duration-300" style={{ width: `${competenciesPercent}%` }} />
+              </div>
+              <div className="text-[11px] text-amber-600 font-medium flex items-center gap-1">
                 <Award className="w-3.5 h-3.5" />
-                <span>Niveau d'excellence</span>
+                <span>{validatedCodes.size} sur {MASTER_COMPETENCIES_360.length} référentiels validés</span>
               </div>
             </div>
           </div>

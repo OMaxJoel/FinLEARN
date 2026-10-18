@@ -132,11 +132,38 @@ Pour chaque sous-compétence, les colonnes obligatoires identifient la chaîne d
 
 | ID Exigence | Intitulé & Description | Implémentation Code | Vérification / Test | Livrable & Statut |
 | :--- | :--- | :--- | :--- | :--- |
-| **360-HIERARCHY** | Structure hiérarchique 10 niveaux (Domaine → Parcours → Niveau → Module → Chapitre → Leçon → Pratique → Simulateur → Évaluation → Validation) | `src/types/pedagogy360.ts`, `src/data/curriculum360Data.ts` | `tests/acceptance_scenarios.test.ts` (Scénario A) | **LIVRÉ 100%** |
-| **360-PILOT-PATH** | Parcours pilote "Devenir analyste financier 360°" (10 niveaux, 10 modules complets, chapitres, leçons exhaustives conformes aux 26 critères) | `PILOT_FINANCIAL_ANALYST_PATH` dans `src/data/curriculum360Data.ts` | `tests/acceptance_scenarios.test.ts` (Complétude 100%) | **LIVRÉ 100%** |
-| **360-PERSISTENCE** | Persistance de la progression multi-appareils (BDD relationnelle, fallback hors-ligne, debounce 800ms, notification d'échec de sauvegarde) | `src/core/persistence/progressStore.ts`, `src/core/persistence/dbClient.ts` | `tests/acceptance_scenarios.test.ts` (Scénarios D, E, J) | **LIVRÉ 100%** |
-| **360-LIFECYCLE** | Cycle de vie "Démarrer / Reprendre / Revoir le parcours" avec vérification des prérequis, diagnostic initial et reprise à l'activité exacte | `src/components/courses/PathEnrollmentModal.tsx`, `src/components/courses/CatalogView.tsx` | `tests/acceptance_scenarios.test.ts` (Scénario A, D) | **LIVRÉ 100%** |
-| **360-SIMULATOR-LINK**| Liaison directe des leçons aux 10 simulateurs déterministes et serious games avec pré-remplissage et critères de complétude | `src/components/simulators/PracticalActivityBridgeModal.tsx` | `tests/acceptance_scenarios.test.ts` (Scénarios F, G) | **LIVRÉ 100%** |
-| **360-AUTHOR-STUDIO** | Espace Formateur / Studio Auteur avec grille d'audit de complétude 360° en temps réel, arbre hiérarchique et éditeur de leçons | `src/components/author/AuthorStudio.tsx`, `src/core/authoring/completenessAuditor.ts` | `tests/acceptance_scenarios.test.ts` (Audit 100% éligible) | **LIVRÉ 100%** |
-| **360-VERCEL-DEPLOY** | Fonctions serverless `/api/health`, `/api/progress`, `/api/paths`, `/api/author`, configuration `vercel.json`, variables `.env.example`, migrations SQL | `api/*.ts`, `vercel.json`, `.env.example`, `migrations/001_init_learning_system.sql` | `tests/acceptance_scenarios.test.ts` (Scénario I, HTTP 200) | **LIVRÉ 100%** |
+| **360-HIERARCHY** | Structure hiérarchique des parcours | `src/types/pedagogy360.ts`, `src/data/curriculum360Data.ts` | `tests/acceptance_scenarios.test.ts` (Scénario A) | **Implémentée** |
+| **360-PILOT-PATH** | Parcours pilote « Devenir analyste financier 360° » : 10 modules, 30 leçons structurées et activités chiffrées | `PILOT_FINANCIAL_ANALYST_PATH`, `src/data/curriculum/pilotExpansion.ts` | Audit formel du Studio et tests de publication | **Publié après audit formel ; relecture experte à réaliser** |
+| **360-PERSISTENCE** | Persistance relationnelle prévue, cache local et signalement d’échec de sauvegarde | `src/core/persistence/progressStore.ts`, `src/core/persistence/dbClient.ts` | Tests locaux et API simulée | **Implémentée ; synchronisation distante à vérifier** |
+| **360-LIFECYCLE** | Cycle de vie « Démarrer / Reprendre / Revoir le parcours » | `src/components/courses/PathEnrollmentModal.tsx`, `src/components/courses/CatalogView.tsx` | `tests/acceptance_scenarios.test.ts` (Scénarios A, D) | **Implémenté** |
+| **360-SIMULATOR-LINK**| Ouverture des ateliers métier, avec une réponse pédagogique déterministe évaluée avant attribution des points | `src/components/simulators/PracticalActivityBridgeModal.tsx` | Tests d’acceptation | **Implémentée ; les simulateurs restent des ateliers d’entraînement** |
+| **360-AUTHOR-STUDIO** | Studio Auteur avec hiérarchie éditable et audit structurel renforcé | `src/components/author/AuthorStudio.tsx`, `src/core/authoring/completenessAuditor.ts` | `tests/acceptance_scenarios.test.ts` | **Implémenté ; audit non équivalent à une accréditation** |
+| **360-VERCEL-DEPLOY** | Fonctions serverless, configuration et migrations de base | `api/*.ts`, `vercel.json`, `.env.example`, `migrations/*.sql` | Contrôles locaux uniquement | **Code présent ; déploiement et base de production non vérifiés** |
+
+---
+
+## 11. Catalogue des parcours et statut réel de publication
+
+### 11.1 Parcours publiés et brouillons
+
+Le pilote analyste financier est le seul parcours actuellement publié : il possède 10 modules et 30 leçons et passe l’audit structurel codé. Les six autres parcours restent des brouillons, car ils ont une leçon par module et ne satisfont pas les seuils de profondeur, d’évaluation et de pratique vérifiable. Les durées et projets décrits ci-dessous sont des objectifs de conception, pas des offres certifiées.
+
+| Code Parcours | Intitulé Professionnel | Domaine | Niveaux / Modules | Durée | Simulateurs & Pratiques Liés | Projet Final Certifiant |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| `PATH_FIN_ANALYST_360` | Devenir Analyste Financier d'Entreprise 360° | Finance | 10 niveaux / 10 modules / 30 leçons | 65h prévues | Ateliers métier et exercices de transfert | Projet décrit ; soumission et notation finale non intégrées |
+| `PATH_COMPTA_SYSCOHADA_360` | Maîtriser la Comptabilité SYSCOHADA Révisé 360° | Comptabilité | 8 niveaux / 8 modules / 8 leçons | 50h prévues | Atelier en brouillon | Objectif de conception |
+| `PATH_CONTROLE_GESTION_360` | Contrôle de Gestion & Pilotage des Marges 360° | Contrôle | 8 niveaux / 8 modules / 8 leçons | 45h prévues | Ateliers en brouillon | Objectif de conception |
+| `PATH_TRESORERIE_360` | Gestion & Prévision de Trésorerie Opérationnelle 360° | Trésorerie | 8 niveaux / 8 modules / 8 leçons | 45h prévues | Atelier en brouillon | Objectif de conception |
+| `PATH_EXCEL_MODELING_360` | Modélisation Financière Avancée sur Excel 360° | Excel / Outils | 8 niveaux / 8 modules / 8 leçons | 40h prévues | Ateliers en brouillon | Objectif de conception |
+| `PATH_ASSURANCE_CIMA_360` | Finance du Courtage & Réglementation CIMA 360° | Assurance | 8 niveaux / 8 modules / 8 leçons | 48h prévues | Atelier en brouillon | Objectif de conception |
+| `PATH_CONSOLIDATION_360` | Consolidation des Comptes & Reporting Groupe 360° | Consolidation | 8 niveaux / 8 modules / 8 leçons | 52h prévues | Atelier en brouillon | Objectif de conception |
+
+### 11.2 Suivi Quadridimensionnel Strict (Non-Conflation Pédagogique)
+
+Conformément à la directive pédagogique, la plateforme sépare rigoureusement et affiche en permanence sans les confondre :
+1. **Taux de consultation du contenu théorique (%)** : mesure la lecture et l'exploration des leçons, définitions et principes conceptuels.
+2. **Taux de complétion des activités pratiques (%)** : mesure la réalisation effective des exercices guidés, exercices autonomes et simulateurs déterministes.
+3. **Score moyen aux évaluations (%)** : mesure la performance chiffrée obtenue aux quiz de compréhension et aux évaluations de fin de module (seuil minimal de validation à 70-75%).
+4. **Taux de maîtrise des compétences (%)** : une compétence n'est validée qu'après réussite des évaluations de tous ses modules associés au seuil le plus exigeant entre l'évaluation et le référentiel, ainsi qu'au moins 70 % des activités pratiques terminées avec un score moyen au seuil de la compétence (`MASTER_COMPETENCIES_360`).
+
 

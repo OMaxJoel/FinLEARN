@@ -7,6 +7,7 @@ import { computeFinancialRatios } from '../src/core/finance/ratios';
 import healthHandler from '../api/health';
 import pathsHandler from '../api/paths';
 import progressHandler from '../api/progress';
+import authorHandler from '../api/author';
 
 describe('Vérification Complète des 10 Scénarios d\'Acceptation Obligatoires (A à J)', () => {
   beforeEach(() => {
@@ -103,9 +104,9 @@ describe('Vérification Complète des 10 Scénarios d\'Acceptation Obligatoires 
   });
 
   // --------------------------------------------------------------------------
-  // SCÉNARIO E — MULTI-APPAREILS ET SYNCHRONISATION
+  // SCÉNARIO E — MODE HORS LIGNE (NE CERTIFIE PAS LA SYNCHRONISATION MULTI-APPAREILS)
   // --------------------------------------------------------------------------
-  it('Scénario E : Multi-appareils — Persistance et récupération depuis un autre terminal', async () => {
+  it('Scénario E : Hors-ligne — Le cache local ne se présente pas comme une synchronisation multi-appareils', async () => {
     const userId = 'user_multi_device';
     const enrollmentAppareil1 = await ProgressEngine.startOrResumePath(userId, PILOT_FINANCIAL_ANALYST_PATH);
     enrollmentAppareil1.activityRecords['L_N1_M1_01'] = {
@@ -119,13 +120,17 @@ describe('Vérification Complète des 10 Scénarios d\'Acceptation Obligatoires 
       lastAttemptAt: new Date().toISOString(),
     };
 
-    // Sauvegarde appareil 1
-    await dbPersistence.saveEnrollment(enrollmentAppareil1);
+    // Simuler l'absence de serveur : le cache reste local et le résultat doit l'indiquer.
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockRejectedValue(new Error('Serveur indisponible'));
+    const saveResult = await dbPersistence.saveEnrollment(enrollmentAppareil1);
+    global.fetch = originalFetch;
+    expect(saveResult.syncedToRemote).toBe(false);
+    expect(saveResult.success).toBe(false);
 
-    // Connexion sur Appareil 2
-    const enrollmentAppareil2 = await dbPersistence.getEnrollment(userId, PILOT_FINANCIAL_ANALYST_PATH.id);
-    expect(enrollmentAppareil2).toBeDefined();
-    expect(enrollmentAppareil2?.activityRecords['L_N1_M1_01'].state).toBe('terminee');
+    // Le cache peut relire cet état sur le même navigateur; aucun test ici ne prétend couvrir un second appareil.
+    const localEnrollment = await dbPersistence.getEnrollment(userId, PILOT_FINANCIAL_ANALYST_PATH.id);
+    expect(localEnrollment?.activityRecords['L_N1_M1_01'].state).toBe('terminee');
   });
 
   // --------------------------------------------------------------------------
@@ -221,7 +226,7 @@ describe('Vérification Complète des 10 Scénarios d\'Acceptation Obligatoires 
   // --------------------------------------------------------------------------
   // SCÉNARIO I — DÉPLOIEMENT VERCEL ET SANTÉ DES API
   // --------------------------------------------------------------------------
-  it('Scénario I : Déploiement Vercel — API /health et /paths répondent en 200', async () => {
+  it('Scénario I local : API /health et /paths répondent, sans prétendre qu’une base est configurée', async () => {
     const mockRes = {
       statusCode: 0,
       headers: {} as Record<string, string>,
@@ -234,7 +239,8 @@ describe('Vérification Complète des 10 Scénarios d\'Acceptation Obligatoires 
     // Test API Health
     await healthHandler({ method: 'GET', url: 'http://localhost/api/health' }, mockRes);
     expect(mockRes.statusCode).toBe(200);
-    expect(mockRes.body.status).toBe('ok');
+    expect(mockRes.body.status).toBe('degraded');
+    expect(mockRes.body.database.status).toBe('not_configured');
     expect(mockRes.body.version).toBeDefined();
 
     // Test API Paths
@@ -242,6 +248,20 @@ describe('Vérification Complète des 10 Scénarios d\'Acceptation Obligatoires 
     await pathsHandler({ method: 'GET', url: 'http://localhost/api/paths' }, mockResPaths);
     expect(mockResPaths.statusCode).toBe(200);
     expect(mockResPaths.body.paths.length).toBeGreaterThan(0);
+
+    // Les routes de progression exigent une session signée; un userId arbitraire ne suffit pas.
+    const protectedResponse = { ...mockRes, statusCode: 0, body: null as any };
+    await progressHandler({ method: 'GET', url: 'http://localhost/api/progress?userId=other-account&pathId=some-path', headers: {} }, protectedResponse);
+    expect(protectedResponse.statusCode).toBe(401);
+
+    const authorResponse = {
+      statusCode: 0,
+      body: null as any,
+      status(code: number) { this.statusCode = code; return this; },
+      json(data: any) { this.body = data; return this; },
+    };
+    await authorHandler({ method: 'POST', url: 'http://localhost/api/author', headers: { host: 'localhost', origin: 'http://localhost' }, body: { action: 'publish', pathId: PILOT_FINANCIAL_ANALYST_PATH.id, path: PILOT_FINANCIAL_ANALYST_PATH } }, authorResponse);
+    expect(authorResponse.statusCode).toBe(401);
   });
 
   // --------------------------------------------------------------------------

@@ -1,4 +1,5 @@
 import { LearningPath360, CompetencyRef, CompletenessReport } from '../types/pedagogy360';
+import { expandPilotPath } from './curriculum/pilotExpansion';
 
 // ============================================================================
 // RÉFÉRENTIEL DES COMPÉTENCES MÉTIER (FINANCE & GESTION OHADA / UEMOA / CIMA)
@@ -85,6 +86,36 @@ export const MASTER_COMPETENCIES_360: CompetencyRef[] = [
       'Sensibilité aux hypothèses macroéconomiques',
     ],
   },
+  {
+    code: 'ASSUR-CIMA',
+    domain: 'assurance',
+    title: 'Droit & Technique des Assurances Code CIMA',
+    description: 'Réglementation de l\'Article 13, calcul des primes pures et commerciales, liquidation des sinistres avec franchise et RPC (Art. 35), solvabilité CRCA.',
+    requiredScorePercent: 75,
+    subCompetencies: [
+      'Application de l\'Article 13 "Pas de prime, pas de garantie"',
+      'Tarification actuarielle des primes et taxes',
+      'Règle proportionnelle de capitaux (RPC Art. 35) et franchises',
+      'Comptabilité d\'agence, commissions et reversements compagnies',
+      'Calcul du ratio S/P et provisions pour sinistres à payer (PSAP)',
+    ],
+  },
+  {
+    code: 'CONSO-GROUPE',
+    domain: 'consolidation',
+    title: 'Consolidation des Comptes & Reporting Groupe SYSCOHADA / IFRS',
+    description: 'Périmètre de consolidation, pourcentages d\'intérêt et contrôle, intégration globale, élimination des opérations réciproques, profits internes, Goodwill et devises.',
+    requiredScorePercent: 75,
+    subCompetencies: [
+      'Périmètre de consolidation et typologie de contrôle',
+      'Retraitements d\'homogénéisation et impôts différés (25%)',
+      'Élimination des opérations réciproques sans marge et dividendes internes',
+      'Neutralisation des marges internes en stock et sur immobilisations',
+      'Calcul du Goodwill et test de dépréciation annuelle',
+      'Partage des capitaux propres et droits des minoritaires',
+      'Conversion des filiales hors zone CFA (cours de clôture)',
+    ],
+  },
 ];
 
 // ============================================================================
@@ -92,14 +123,14 @@ export const MASTER_COMPETENCIES_360: CompetencyRef[] = [
 // 10 Niveaux, 10 Modules, Chapitres détaillés, Leçons conformes aux 26 critères
 // ============================================================================
 
-export const PILOT_FINANCIAL_ANALYST_PATH: LearningPath360 = {
+const PILOT_FINANCIAL_ANALYST_BASE: LearningPath360 = {
   id: 'PATH_FIN_ANALYST_360',
   domainId: 'finance',
   title: 'Devenir Analyste Financier d\'Entreprise 360°',
   tagline: 'Programme professionnel intégral : des fondations comptables au diagnostic d\'entreprise, prévisions et recommandations au comité exécutif',
-  description: 'Un cursus d\'excellence structuré en 10 niveaux progressifs. Chaque notion théorique est systématiquement mise en pratique sur des cas réels d\'entreprises ivoiriennes et régionales UEMOA (en FCFA), avec des simulateurs interactifs déterministes, des missions scénarisées, des devoirs guidés et un projet professionnel certifiant.',
+  description: 'Un parcours pilote de 10 modules progressifs, construit autour de cas pédagogiques fictifs et chiffrés en FCFA. Les leçons associent théorie, exemples résolus, exercices de transfert, ateliers métier et évaluations de module. Le projet final est défini comme sujet de synthèse ; sa soumission et sa notation formateur ne sont pas encore intégrées.',
   targetRole: 'Analyste Financier Senior / Contrôleur Financier / Chargé d\'Affaires Entreprises',
-  levelBadge: 'Cursus Complet 10 Niveaux - Débutant à Expert',
+  levelBadge: 'Parcours pilote audité · 10 modules',
   color: 'blue',
   iconName: 'TrendingUp',
   version: '2.4.0',
@@ -1867,10 +1898,25 @@ export const PILOT_FINANCIAL_ANALYST_PATH: LearningPath360 = {
   },
 };
 
+export const PILOT_FINANCIAL_ANALYST_PATH = expandPilotPath(PILOT_FINANCIAL_ANALYST_BASE);
+
 // ============================================================================
 // CATALOGUE DE TOUS LES PARCOURS 360° DU SYSTÈME
 // ============================================================================
 
+import { PATH_COMPTA_SYSCOHADA_360 } from './curriculum/accounting360';
+import { PATH_CONTROLE_GESTION_360 } from './curriculum/controlling360';
+import { PATH_TRESORERIE_360 } from './curriculum/treasury360';
+import { PATH_EXCEL_MODELING_360 } from './curriculum/excel360';
+import { PATH_ASSURANCE_CIMA_360 } from './curriculum/insurance360';
+import { PATH_CONSOLIDATION_360 } from './curriculum/consolidation360';
+
 export const ALL_LEARNING_PATHS_360: LearningPath360[] = [
   PILOT_FINANCIAL_ANALYST_PATH,
+  PATH_COMPTA_SYSCOHADA_360,
+  PATH_CONTROLE_GESTION_360,
+  PATH_TRESORERIE_360,
+  PATH_EXCEL_MODELING_360,
+  PATH_ASSURANCE_CIMA_360,
+  PATH_CONSOLIDATION_360,
 ];

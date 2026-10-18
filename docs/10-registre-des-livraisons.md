@@ -1,7 +1,9 @@
 # 10 — Registre des Livraisons et Suivi d'Avancement Réel
 
-**Version :** 5.2.0 (Enrichissement 360° : Cours Métiers, Académie Excel & 12 Serious Games) — Date : 17 Octobre 2026  
+**Version :** Registre historique — Dernière mise à jour de cet addendum : 18 octobre 2026  
 **Responsable :** Directeur des Systèmes d'Information & Chef de Projet Senior
+
+> **Mise à jour de statut :** les mentions « livré », les décomptes de tests et l’affirmation de conformité ci-dessous sont le journal historique du 17 octobre 2026. Ils ne constituent pas une recette vérifiée ni une homologation. La vérification locale actuelle et les limites de couverture sont consignées dans [le rapport de vérification](11-rapport-recette-finale.md). Le déploiement de production et la synchronisation réelle multi-appareils restent à vérifier.
 
 ---
 
@@ -160,7 +162,7 @@
 
 ## 5. Synthèse des Exigences Couvertes et Clôture du Projet
 
-### Exigences Validées et Livrées (Lots 1 à 6 — 100% Terminés) :
+### Fonctionnalités présentes dans le dépôt (sans homologation globale)
 - [x] **Comptabilité Générale SYSCOHADA (COMPTA-01 à COMPTA-04) :** Cycle comptable intégral, journal, balance, liasse bilancielle, rapprochement bancaire.
 - [x] **Contrôle de Gestion & Écarts (GEST-01 à GEST-04) :** Budget flexible, décomposition volume/prix/coût/mix avec additivité certifiée, seuil de rentabilité.
 - [x] **Modélisation & Tableaux Excel (EXCEL-01 à EXCEL-04) :** Lexer/AST, fonctions conditionnelles, RECHERCHEX, Studio TCD multidimensionnel et moteur d'audit de classeur.
@@ -172,6 +174,10 @@
 - [x] **Assistance IA Pédagogique & Garde-fous Déterministes (US-701) :** Tuteur IA conversationnel socratique, diagnostic cognitif des confusions récurrentes, modale flottante globale.
 - [x] **Industrialisation, Sécurité OWASP & Accessibilité WCAG 2.2 AA (Lot 6) :** Sanitization anti-XSS, intégrité double-entrée, exports CSV de la liasse SYSCOHADA et du portefeuille CIMA, attestation certifiée avec UUID numérique, code-splitting Vite optimisé.
 
-### Statut Final du Projet :
-- **Taux de couverture des exigences :** **100 % (Conformité Totale aux deux Cahiers des Charges)**.
-- **Procès-Verbal de Recette :** Documenté dans [11-rapport-recette-finale.md](file:///d:/Projet%20LEARN/docs/11-rapport-recette-finale.md) avec avis favorable sans réserve.
+### Statut courant au 18 octobre 2026
+
+- **Build local :** réussi (`npm run build`).
+- **Tests locaux :** 76 réussis dans 15 fichiers (`npm test -- --run`).
+- **Déploiement et persistance multi-appareils :** non vérifiés avec un service distant.
+- **Conformité WCAG ou validation experte du contenu :** non certifiées par cette recette technique.
+- **Rapport courant :** [11-rapport-recette-finale.md](11-rapport-recette-finale.md).

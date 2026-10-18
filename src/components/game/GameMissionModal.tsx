@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GameMission } from '../../types/game';
 import {
   X,
@@ -28,14 +28,24 @@ export const GameMissionModal: React.FC<GameMissionModalProps> = ({
   onClose,
   onMissionCompleted,
 }) => {
-  if (!isOpen || !mission) return null;
-
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [selectedDocId, setSelectedDocId] = useState<string | null>(mission.documents[0]?.id || null);
+  const [selectedDocId, setSelectedDocId] = useState<string | null>(mission?.documents[0]?.id || null);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [stepFeedback, setStepFeedback] = useState<any | null>(null);
   const [earnedPoints, setEarnedPoints] = useState(0);
   const [isFinished, setIsFinished] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !mission) return;
+    setCurrentStepIndex(0);
+    setSelectedDocId(mission.documents[0]?.id || null);
+    setSelectedOptionId(null);
+    setStepFeedback(null);
+    setEarnedPoints(0);
+    setIsFinished(false);
+  }, [isOpen, mission?.id]);
+
+  if (!isOpen || !mission) return null;
 
   const currentStep = mission.steps[currentStepIndex];
   const maxPossiblePoints = mission.steps.reduce(

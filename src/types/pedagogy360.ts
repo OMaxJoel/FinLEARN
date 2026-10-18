@@ -130,6 +130,13 @@ export interface PracticalActivityRef {
     targetValue: any;
     description: string;
   };
+  assessment?: {
+    prompt: string;
+    expectedAnswer: number;
+    tolerance?: number;
+    correction: string;
+    unit?: string;
+  };
   rubricPoints: number;
 }
 

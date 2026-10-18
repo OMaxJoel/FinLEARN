@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   LearningPath360,
   Module360,
   Lesson360,
   CompletenessReport,
 } from '../../types/pedagogy360';
-import { PILOT_FINANCIAL_ANALYST_PATH, MASTER_COMPETENCIES_360 } from '../../data/curriculum360Data';
+import { ALL_LEARNING_PATHS_360, PILOT_FINANCIAL_ANALYST_PATH, MASTER_COMPETENCIES_360 } from '../../data/curriculum360Data';
 import { CompletenessAuditor } from '../../core/authoring/completenessAuditor';
 import {
   Layers,
@@ -35,6 +35,9 @@ export const AuthorStudio: React.FC = () => {
   // Leçon actuellement éditée
   const [selectedLessonId, setSelectedLessonId] = useState<string>('L_N1_M1_01');
   const [publishMessage, setPublishMessage] = useState<string | null>(null);
+  const [messageKind, setMessageKind] = useState<'success' | 'error' | 'info'>('info');
+  const [saving, setSaving] = useState(false);
+  const [draftDirty, setDraftDirty] = useState(false);
 
   // Exécution de l'audit de complétude en temps réel
   const auditReport: CompletenessReport = CompletenessAuditor.auditPath(activePath);
@@ -46,25 +49,106 @@ export const AuthorStudio: React.FC = () => {
   const currentLesson: Lesson360 =
     allLessons.find((l) => l.id === selectedLessonId) || allLessons[0];
 
+  useEffect(() => {
+    let active = true;
+    fetch(`/api/author?action=draft&pathId=${encodeURIComponent(activePath.id)}`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Brouillon distant indisponible');
+        return response.json();
+      })
+      .then(({ draft }) => {
+        if (active && draft) {
+          setActivePath(draft as LearningPath360);
+          setDraftDirty(false);
+          setMessageKind('success');
+          setPublishMessage('Brouillon enregistré chargé.');
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setMessageKind('info');
+          setPublishMessage('Aucun brouillon distant chargé. Les changements ne seront conservés qu’après un enregistrement réussi.');
+        }
+      });
+    return () => { active = false; };
+  }, [activePath.id]);
+
+  const updateCurrentLesson = (changes: Partial<Lesson360>) => {
+    setActivePath((path) => ({
+      ...path,
+      levels: path.levels.map((level) => ({
+        ...level,
+        modules: level.modules.map((module) => ({
+          ...module,
+          chapters: module.chapters.map((chapter) => ({
+            ...chapter,
+            lessons: chapter.lessons.map((lesson) => lesson.id === currentLesson.id ? { ...lesson, ...changes } : lesson),
+          })),
+        })),
+      })),
+    }));
+    setDraftDirty(true);
+    setPublishMessage(null);
+  };
+
+  const handleSaveDraft = async () => {
+    setSaving(true);
+    setPublishMessage(null);
+    try {
+      const response = await fetch('/api/author', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'save-draft', pathId: activePath.id, path: activePath }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.error || 'Échec de la sauvegarde');
+      setMessageKind('success');
+      setDraftDirty(false);
+      setPublishMessage(`Brouillon enregistré à ${new Date(result.savedAt).toLocaleTimeString()}.`);
+    } catch (error) {
+      setMessageKind('error');
+      setPublishMessage(error instanceof Error ? error.message : 'Le brouillon n’a pas été enregistré.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSelectPath = (pathId: string) => {
+    const found = ALL_LEARNING_PATHS_360.find((p) => p.id === pathId);
+    if (found) {
+      setActivePath(found);
+      const firstLesson = found.levels[0]?.modules[0]?.chapters[0]?.lessons[0];
+      if (firstLesson) {
+        setSelectedLessonId(firstLesson.id);
+      }
+    }
+  };
+
   const handlePublish = async () => {
     if (!auditReport.isReadyForPublish) {
-      alert('Impossible de publier : le parcours ne satisfait pas tous les critères de complétude requis.');
+      setMessageKind('error');
+      setPublishMessage('Publication impossible : le parcours ne satisfait pas tous les critères de complétude requis.');
       return;
     }
 
+    setSaving(true);
     try {
       const res = await fetch('/api/author', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'publish', pathId: activePath.id }),
+        body: JSON.stringify({ action: 'publish', pathId: activePath.id, path: activePath }),
       });
-      if (res.ok) {
-        setPublishMessage(`Version ${activePath.version} certifiée et publiée avec succès !`);
-      } else {
-        setPublishMessage(`Version ${activePath.version} prête pour le déploiement.`);
-      }
-    } catch {
-      setPublishMessage(`Version ${activePath.version} prête pour le déploiement.`);
+      const result = await res.json();
+      if (!res.ok || !result.success) throw new Error(result.error || 'La publication a échoué.');
+      setActivePath((path) => ({ ...path, version: result.version, status: 'published' }));
+      setMessageKind('success');
+      setDraftDirty(false);
+      setPublishMessage(`Version ${result.version} du parcours « ${activePath.title} » publiée et enregistrée.`);
+    } catch (error) {
+      setMessageKind('error');
+      setPublishMessage(error instanceof Error ? error.message : 'La publication n’a pas été enregistrée.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -72,7 +156,7 @@ export const AuthorStudio: React.FC = () => {
     <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-fadeIn">
       {/* 1. Header du Studio Auteur */}
       <div className="bg-gradient-to-r from-[#0B132B] via-[#12244E] to-[#0A1633] rounded-3xl p-5 sm:p-7 text-white shadow-xl border border-slate-700/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 flex-1">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-sky-300 text-xs font-semibold border border-blue-400/30">
             <Sliders className="w-3.5 h-3.5" />
             <span>Studio Auteur & Gouvernance Pédagogique 360°</span>
@@ -81,17 +165,41 @@ export const AuthorStudio: React.FC = () => {
             Administration des Parcours de Formation
           </h1>
           <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-            Édition, contrôle de complétude, liaison avec les simulateurs déterministes et publication certifiée selon les 26 critères de qualité.
+            Édition, contrôle de complétude selon les 26 critères, liaison avec les simulateurs déterministes et publication certifiée.
           </p>
+
+          {/* Sélecteur de Parcours à Auditer */}
+          <div className="pt-2 flex flex-wrap items-center gap-2">
+            <label className="text-xs font-semibold text-slate-300">Parcours à auditer / éditer :</label>
+            <select
+              value={activePath.id}
+              onChange={(e) => handleSelectPath(e.target.value)}
+              className="bg-slate-900/90 border border-slate-700 text-white rounded-xl px-3 py-1.5 text-xs font-bold focus:outline-hidden focus:ring-2 focus:ring-blue-500/40"
+            >
+              {ALL_LEARNING_PATHS_360.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title} ({p.levels.length} Niveaux - {p.estimatedHours}h)
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
           <div className="px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700 text-xs text-slate-300">
-            Version courante : <strong className="text-white font-mono">v{activePath.version}</strong>
+            Version : <strong className="text-white font-mono">v{activePath.version}</strong>
           </div>
           <button
+            onClick={handleSaveDraft}
+            disabled={saving}
+            className="px-4 py-2.5 rounded-xl border border-slate-600 bg-slate-800/80 hover:bg-slate-700 text-white font-bold text-xs transition flex items-center gap-2 disabled:opacity-50"
+          >
+            <Save className="w-4 h-4" />
+            <span>{saving ? 'Enregistrement…' : draftDirty ? 'Enregistrer le brouillon · modifié' : 'Enregistrer le brouillon'}</span>
+          </button>
+          <button
             onClick={handlePublish}
-            disabled={!auditReport.isReadyForPublish}
+            disabled={!auditReport.isReadyForPublish || saving}
             className={`px-4 py-2.5 rounded-xl font-bold text-xs shadow-md transition flex items-center gap-2 ${
               auditReport.isReadyForPublish
                 ? 'bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer'
@@ -105,12 +213,12 @@ export const AuthorStudio: React.FC = () => {
       </div>
 
       {publishMessage && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between">
+        <div role="status" className={`p-4 rounded-2xl border text-xs font-semibold flex items-center justify-between ${messageKind === 'error' ? 'bg-rose-50 border-rose-200 text-rose-800' : messageKind === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
           <div className="flex items-center gap-2">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+            {messageKind === 'error' ? <AlertTriangle className="w-5 h-5 text-rose-600" /> : messageKind === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-600" /> : <HelpCircle className="w-5 h-5 text-blue-600" />}
             <span>{publishMessage}</span>
           </div>
-          <button onClick={() => setPublishMessage(null)} className="text-emerald-700 hover:text-emerald-900">
+          <button onClick={() => setPublishMessage(null)} className="text-slate-500 hover:text-slate-900" aria-label="Fermer le message">
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -308,11 +416,12 @@ export const AuthorStudio: React.FC = () => {
               </p>
             </div>
             <button
-              onClick={() => alert('Création d\'un nouveau module dans le parcours')}
-              className="px-3.5 py-2 rounded-xl bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition flex items-center gap-1.5"
+              disabled
+              title="La création de modules sera disponible dans une prochaine étape du studio."
+              className="px-3.5 py-2 rounded-xl bg-slate-200 text-slate-500 font-bold text-xs cursor-not-allowed flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
-              <span>Nouveau Module</span>
+              <span>Création de modules bientôt disponible</span>
             </button>
           </div>
 
@@ -387,7 +496,8 @@ export const AuthorStudio: React.FC = () => {
               <label className="font-bold text-slate-700">Titre de la leçon</label>
               <input
                 type="text"
-                defaultValue={currentLesson.title}
+                value={currentLesson.title}
+                onChange={(event) => updateCurrentLesson({ title: event.target.value })}
                 className="w-full px-3 py-2 rounded-xl border border-slate-300 text-slate-800"
               />
             </div>
@@ -395,7 +505,8 @@ export const AuthorStudio: React.FC = () => {
               <label className="font-bold text-slate-700">Durée indicative (minutes)</label>
               <input
                 type="number"
-                defaultValue={currentLesson.durationMinutes}
+                value={currentLesson.durationMinutes}
+                onChange={(event) => updateCurrentLesson({ durationMinutes: Number(event.target.value) })}
                 className="w-full px-3 py-2 rounded-xl border border-slate-300 text-slate-800"
               />
             </div>
@@ -405,7 +516,8 @@ export const AuthorStudio: React.FC = () => {
             <label className="font-bold text-slate-700">Introduction contextualisée</label>
             <textarea
               rows={3}
-              defaultValue={currentLesson.contextIntro}
+              value={currentLesson.contextIntro}
+              onChange={(event) => updateCurrentLesson({ contextIntro: event.target.value })}
               className="w-full px-3 py-2 rounded-xl border border-slate-300 text-slate-800"
             />
           </div>

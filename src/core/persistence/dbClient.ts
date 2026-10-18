@@ -84,6 +84,12 @@ class DatabasePersistenceClient {
             this.notifySyncListeners();
             return data.enrollment;
           }
+        } else {
+          this.syncStatus.hasSyncError = true;
+          this.syncStatus.syncErrorMessage = response.status === 401
+            ? 'Session expirée : reconnectez-vous pour synchroniser votre progression.'
+            : 'Progression distante indisponible : seules les données locales peuvent être affichées.';
+          this.notifySyncListeners();
         }
       } catch (err: any) {
         console.warn('[Persistence] Serveur distant injoignable, lecture du cache local:', err.message);
@@ -111,6 +117,12 @@ class DatabasePersistenceClient {
             this.setLocal(listKey, data.enrollments);
             return data.enrollments;
           }
+        } else {
+          this.syncStatus.hasSyncError = true;
+          this.syncStatus.syncErrorMessage = response.status === 401
+            ? 'Session expirée : reconnectez-vous pour charger vos parcours.'
+            : 'Impossible de charger les parcours enregistrés sur le serveur.';
+          this.notifySyncListeners();
         }
       } catch (err) {
         // Fallback local
@@ -151,7 +163,8 @@ class DatabasePersistenceClient {
 
         this.syncStatus.isSyncing = false;
 
-        if (response && response.ok) {
+        const responseData = response?.ok ? await response.json().catch(() => ({})) : {};
+        if (response && response.ok && responseData.savedToDb === true) {
           this.syncStatus.lastSyncedAt = new Date().toISOString();
           this.syncStatus.hasSyncError = false;
           this.syncStatus.syncErrorMessage = undefined;
@@ -162,7 +175,7 @@ class DatabasePersistenceClient {
             timestamp: this.syncStatus.lastSyncedAt,
           };
         } else {
-          const errData = response ? await response.json().catch(() => ({})) : {};
+          const errData = responseData;
           const errMsg = errData.error || (response ? `Erreur serveur HTTP ${response.status}` : 'Erreur réseau');
           this.syncStatus.hasSyncError = true;
           this.syncStatus.syncErrorMessage = `Échec de sauvegarde distante : ${errMsg}`;
@@ -192,7 +205,7 @@ class DatabasePersistenceClient {
       // Hors-ligne explicite
       this.queuePendingSync(enrollment);
       return {
-        success: true,
+        success: false,
         syncedToRemote: false,
         timestamp: new Date().toISOString(),
         error: 'Mode hors-ligne : sauvegarde locale enregistrée, en attente de synchronisation distante.',
@@ -230,7 +243,8 @@ class DatabasePersistenceClient {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ enrollment: item }),
         });
-        if (!res.ok) remaining.push(item);
+        const result = res.ok ? await res.json().catch(() => ({})) : {};
+        if (!res.ok || result.savedToDb !== true) remaining.push(item);
       } catch {
         remaining.push(item);
       }
@@ -240,6 +254,10 @@ class DatabasePersistenceClient {
     this.syncStatus.pendingChangesCount = remaining.length;
     this.syncStatus.isSyncing = false;
     this.syncStatus.lastSyncedAt = remaining.length === 0 ? new Date().toISOString() : this.syncStatus.lastSyncedAt;
+    this.syncStatus.hasSyncError = remaining.length > 0;
+    this.syncStatus.syncErrorMessage = remaining.length > 0
+      ? 'Certaines activités restent en attente de synchronisation.'
+      : undefined;
     this.notifySyncListeners();
   }
 

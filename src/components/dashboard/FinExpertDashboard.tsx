@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../../types/pedagogy';
 import { NavigationTab } from '../common/Sidebar';
+import { dbPersistence } from '../../core/persistence/dbClient';
+import { PATH_DASHBOARD_SUMMARIES } from '../../data/pathDashboardSummaries';
+import { PathEnrollment360, LearningPath360 } from '../../types/pedagogy360';
 import {
   Play,
   ArrowRight,
@@ -19,6 +22,8 @@ import {
   Clock,
   Layers,
   ChevronLeft,
+  RotateCcw,
+  ShieldCheck,
 } from 'lucide-react';
 
 interface FinExpertDashboardProps {
@@ -26,6 +31,7 @@ interface FinExpertDashboardProps {
   onNavigate: (tab: NavigationTab) => void;
   onLaunchMission: (missionId: string) => void;
   onOpenDiagnostic: () => void;
+  onSelectPath?: (pathId: string, initialLessonId?: string) => void;
 }
 
 export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
@@ -33,17 +39,75 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
   onNavigate,
   onLaunchMission,
   onOpenDiagnostic,
+  onSelectPath,
 }) => {
+  const [activeEnrollment, setActiveEnrollment] = useState<PathEnrollment360 | null>(null);
+
+  useEffect(() => {
+    let isCurrent = true;
+    async function loadEnrollment() {
+      const enrollments = await dbPersistence.getAllUserEnrollments(profile.id);
+      if (enrollments && enrollments.length > 0) {
+        const sorted = [...enrollments].sort(
+          (a, b) => new Date(b.lastActivityAt).getTime() - new Date(a.lastActivityAt).getTime()
+        );
+        if (isCurrent) setActiveEnrollment(sorted[0]);
+      } else {
+        const def = await dbPersistence.getEnrollment(profile.id, 'PATH_FIN_ANALYST_360');
+        if (isCurrent) setActiveEnrollment(def);
+      }
+    }
+    loadEnrollment();
+    return () => { isCurrent = false; };
+  }, [profile.id]);
+
+  const currentPath =
+    PATH_DASHBOARD_SUMMARIES.find((path) => path.id === activeEnrollment?.pathId) || PATH_DASHBOARD_SUMMARIES[0];
+
+  const consultationPercent = activeEnrollment?.consultationProgressPercent ?? 0;
+  const practicalPercent = activeEnrollment?.practicalActivitiesProgressPercent ?? 0;
+  const evaluationPercent = activeEnrollment?.evaluationScorePercent ?? 0;
+  const competenciesPercent = activeEnrollment?.competenciesMasteryPercent ?? 0;
+
+  // Détermination dynamique du module et de la leçon en cours
+  let currentModuleTitle = currentPath.levels[0]?.modules[0]?.title ?? 'Module d\'introduction';
+  let currentLessonTitle = currentPath.levels[0]?.modules[0]?.chapters[0]?.lessons[0]?.title ?? 'Première leçon';
+
+  if (activeEnrollment?.currentActivityId) {
+    for (const lvl of currentPath.levels) {
+      for (const mod of lvl.modules) {
+        for (const chap of mod.chapters) {
+          const found = chap.lessons.find((l) => l.id === activeEnrollment.currentActivityId);
+          if (found) {
+            currentModuleTitle = mod.title;
+            currentLessonTitle = found.title;
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  const handleResume = () => {
+    if (onSelectPath && activeEnrollment) {
+      onSelectPath(currentPath.id, activeEnrollment.currentLocation?.lessonId || activeEnrollment.currentActivityId);
+    } else if (onSelectPath) {
+      onSelectPath(currentPath.id);
+    } else {
+      onNavigate('courses');
+    }
+  };
+
   return (
-    <div className="p-3.5 sm:p-6 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 animate-fadeIn">
+    <div className="dashboard-page p-4 sm:p-7 xl:p-8 max-w-[1600px] mx-auto space-y-6 sm:space-y-8 animate-fadeIn">
       {/* Grille Principale 2 Colonnes : Contenu Central (70%) + Colonne Profil/Activités (30%) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* ========================================================= */}
         {/* COLONNE GAUCHE / CENTRALE (8 sur 12 cols en large) */}
         {/* ========================================================= */}
-        <div className="lg:col-span-8 space-y-4 sm:space-y-6">
+        <div className="lg:col-span-8 space-y-6 sm:space-y-7">
           {/* 1. Grand Bannière Héroïque "VOTRE PARCOURS DE FORMATION" */}
-          <div className="relative rounded-3xl overflow-hidden shadow-lg border border-slate-200/80 bg-gradient-to-r from-[#0E1A38] via-[#11244A] to-[#0A1633] text-white p-4 sm:p-8 min-h-[190px] flex flex-col justify-between">
+          <div className="dashboard-hero relative rounded-[28px] overflow-hidden shadow-lg border border-slate-200/80 bg-gradient-to-r from-[#0E1A38] via-[#11244A] to-[#0A1633] text-white p-6 sm:p-9 min-h-[250px] flex flex-col justify-between">
             {/* Arrière-plan Skyline Abidjan Lagoon au Crépuscule */}
             <div className="absolute inset-0 z-0 opacity-40 mix-blend-screen pointer-events-none overflow-hidden">
               <svg viewBox="0 0 1000 350" preserveAspectRatio="none" className="w-full h-full">
@@ -76,23 +140,23 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
 
             {/* Contenu Bannière */}
             <div className="relative z-10 space-y-3 max-w-2xl">
-              <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#38BDF8] block">
-                Votre parcours de formation
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#7DD3FC] block">
+                Bonjour {profile.name.split(' ')[0]} · votre espace d’apprentissage
               </span>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white leading-tight">
-                Devenez un expert en finance et en assurance
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white leading-[1.12] max-w-xl">
+                Faites progresser votre expertise financière
               </h1>
-              <p className="text-slate-300 text-xs sm:text-sm font-normal max-w-xl leading-relaxed">
-                Des compétences concrètes, des mises en situation réelles, des résultats mesurables.
+              <p className="text-slate-300 text-sm sm:text-base font-normal max-w-xl leading-relaxed">
+                Des compétences concrètes, des mises en situation réelles et un parcours qui avance à votre rythme.
               </p>
 
               <div className="pt-2">
                 <button
-                  onClick={() => onNavigate('courses')}
-                  className="px-5 py-2.5 rounded-full bg-[#FF6B00] hover:bg-[#EA580C] text-white font-bold text-xs shadow-lg shadow-orange-600/30 flex items-center gap-2 transition transform hover:scale-[1.02] cursor-pointer"
+                  onClick={() => activeEnrollment ? handleResume() : onNavigate('catalogue')}
+                  className="px-5 py-3 rounded-xl bg-[#FF6B00] hover:bg-[#EA580C] text-white font-bold text-sm shadow-lg shadow-orange-600/30 flex items-center gap-2 transition transform hover:scale-[1.02] cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-orange-300/40"
                 >
                   <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Reprendre ma formation</span>
+                  <span>{activeEnrollment ? 'Reprendre ma formation' : 'Découvrir les parcours'}</span>
                 </button>
               </div>
             </div>
@@ -106,8 +170,8 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
                 <div className="w-1/3 bg-[#059669]" />
               </div>
               <div className="text-[11px] text-slate-200">
-                <strong className="text-white font-semibold">Contexte Côte d'Ivoire</strong>{' '}
-                <span className="text-slate-400 hidden sm:inline">• Des scénarios adaptés à votre réalité</span>
+                <strong className="text-white font-semibold">Contexte Côte d'Ivoire & UEMOA</strong>{' '}
+                <span className="text-slate-400 hidden sm:inline">• Référentiels SYSCOHADA & CIMA</span>
               </div>
             </div>
           </div>
@@ -119,7 +183,7 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
                 Mon parcours actuel
               </h2>
               <button
-                onClick={() => onNavigate('courses')}
+                onClick={() => onNavigate('catalogue')}
                 className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 transition"
               >
                 <span>Voir tous mes parcours</span>
@@ -132,42 +196,48 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
               {/* Côté Gauche : Photo + Module en cours */}
               <div className="flex items-start gap-3 sm:gap-4 flex-1">
                 {/* Vignette Photo Ordinateur / Bourse */}
-                <div className="w-20 h-20 sm:w-36 sm:h-28 rounded-2xl overflow-hidden shrink-0 bg-slate-900 relative shadow-sm border border-slate-200">
+              <div className="w-20 h-20 sm:w-36 sm:h-28 rounded-2xl overflow-hidden shrink-0 bg-slate-900 relative shadow-sm border border-slate-200">
                   <img
                     src="https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=300&q=80"
-                    alt="Analyse Financière"
+                    alt={currentPath.title}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent" />
+                  <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded text-[9px] font-bold bg-blue-600 text-white uppercase">
+                    {currentPath.domainId}
+                  </span>
                 </div>
 
-                <div className="space-y-1.5 flex-1">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0070F3] text-white uppercase tracking-wider inline-block">
-                    En cours
+                <div className="space-y-1.5 flex-1 min-w-0">
+                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white uppercase tracking-wider inline-block ${activeEnrollment ? 'bg-[#0070F3]' : 'bg-slate-500'}`}>
+                    {activeEnrollment ? 'En cours' : 'Recommandé'}
                   </span>
-                  <h3 className="font-extrabold text-slate-900 text-sm sm:text-base leading-tight">
-                    Analyse financière
+                  <h3 className="font-extrabold text-slate-900 text-sm sm:text-base leading-tight truncate">
+                    {currentPath.title}
                   </h3>
                   <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">
-                    Apprenez à analyser la performance d'une entreprise à travers ses états financiers et ses ratios.
+                    {currentPath.tagline || currentPath.description}
                   </p>
 
-                  {/* Barre de progression 45% */}
+                  {/* Barre de progression des activités pratiques */}
                   <div className="flex items-center gap-3 pt-1">
                     <div className="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                      <div className="bg-[#0070F3] h-full rounded-full" style={{ width: '45%' }} />
+                      <div className="bg-[#0070F3] h-full rounded-full transition-all duration-300" style={{ width: `${practicalPercent}%` }} />
                     </div>
-                    <span className="text-xs font-bold text-slate-700 font-mono">45%</span>
+                    <span className="text-xs font-bold text-slate-700 font-mono">{practicalPercent}%</span>
                   </div>
 
-                  <div className="pt-1">
+                  <div className="pt-1 flex items-center gap-2">
                     <button
-                      onClick={() => onNavigate('simulators')}
+                      onClick={() => activeEnrollment ? handleResume() : onNavigate('catalogue')}
                       className="px-4 py-1.5 rounded-full bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center gap-1.5 transition shadow-xs cursor-pointer"
                     >
                       <Play className="w-3 h-3 fill-current" />
-                      <span>Reprendre</span>
+                      <span>{activeEnrollment ? 'Reprendre' : 'Découvrir'}</span>
                     </button>
+                    <span className="text-[11px] text-slate-400">
+                      {currentPath.levels.length} niveaux • {currentPath.estimatedHours}h
+                    </span>
                   </div>
                 </div>
               </div>
@@ -177,10 +247,10 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
 
               {/* Côté Droit : Prochain Objectif */}
               <div
-                onClick={() => onNavigate('courses')}
+                onClick={handleResume}
                 className="w-full md:w-72 bg-[#F8FAFC] hover:bg-slate-100/80 p-4 rounded-2xl border border-slate-200/80 cursor-pointer transition flex items-center justify-between gap-3 group"
               >
-                <div className="space-y-1.5 flex-1">
+                <div className="space-y-1.5 flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 text-blue-600">
                     <Trophy className="w-3.5 h-3.5" />
                     <span className="text-[11px] font-bold uppercase tracking-wider">
@@ -188,17 +258,17 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
                     </span>
                   </div>
 
-                  <h4 className="font-bold text-slate-900 text-xs leading-snug group-hover:text-blue-600 transition">
-                    Terminer le module 3
+                  <h4 className="font-bold text-slate-900 text-xs leading-snug group-hover:text-blue-600 transition truncate">
+                    {currentModuleTitle}
                   </h4>
-                  <p className="text-[11px] text-slate-500">
-                    Ratios et diagnostic financier
+                  <p className="text-[11px] text-slate-500 truncate">
+                    {currentLessonTitle}
                   </p>
 
                   <div className="pt-1">
                     <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px] inline-flex items-center gap-1">
                       <Sparkles className="w-2.5 h-2.5 text-emerald-600" />
-                      + 15 points d'expérience
+                      + 25 points d'expérience
                     </span>
                   </div>
                 </div>
@@ -207,84 +277,75 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
               </div>
             </div>
 
-            {/* 4 Compteurs Statistiques en Ligne */}
+            {/* 4 Compteurs Statistiques Non-Confondus (Directive Pédagogique 360°) */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-              {/* Carte 1 : Cours suivis */}
+              {/* Carte 1 : Taux de consultation théorique */}
               <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center">
                     <BookOpen className="w-3.5 h-3.5" />
                   </div>
-                  <span className="text-xs font-semibold text-slate-500">Cours suivis</span>
+                  <span className="text-xs font-semibold text-slate-600">Théorie & Leçons</span>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-xl font-extrabold text-slate-900 font-mono">12</span>
-                  <span className="text-xs text-slate-400 font-mono">/ 24</span>
+                  <span className="text-xl font-extrabold text-slate-900 font-mono">{consultationPercent}%</span>
+                  <span className="text-[11px] text-slate-400">consultés</span>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
-                  <div className="bg-blue-600 h-full rounded-full" style={{ width: '50%' }} />
+                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-blue-600 h-full rounded-full transition-all duration-300" style={{ width: `${consultationPercent}%` }} />
                 </div>
               </div>
 
-              {/* Carte 2 : Missions réalisées */}
+              {/* Carte 2 : Activités pratiques & simulateurs */}
               <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-                    <Gamepad2 className="w-3.5 h-3.5" />
+                    <Calculator className="w-3.5 h-3.5" />
                   </div>
-                  <span className="text-xs font-semibold text-slate-500">Missions réalisées</span>
+                  <span className="text-xs font-semibold text-slate-600">Activités pratiques</span>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-xl font-extrabold text-slate-900 font-mono">7</span>
-                  <span className="text-xs text-slate-400 font-mono">/ 15</span>
+                  <span className="text-xl font-extrabold text-slate-900 font-mono">{practicalPercent}%</span>
+                  <span className="text-[11px] text-slate-400">réalisées</span>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
-                  <div className="bg-purple-600 h-full rounded-full" style={{ width: '46%' }} />
+                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-purple-600 h-full rounded-full transition-all duration-300" style={{ width: `${practicalPercent}%` }} />
                 </div>
               </div>
 
-              {/* Carte 3 : Simulateurs utilisés */}
+              {/* Carte 3 : Score aux évaluations */}
               <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                    <Calculator className="w-3.5 h-3.5" />
+                    <Award className="w-3.5 h-3.5" />
                   </div>
-                  <span className="text-xs font-semibold text-slate-500">Simulateurs utilisés</span>
+                  <span className="text-xs font-semibold text-slate-600">Évaluations</span>
                 </div>
                 <div className="flex items-baseline gap-1">
-                  <span className="text-xl font-extrabold text-slate-900 font-mono">5</span>
-                  <span className="text-xs text-slate-400 font-mono">/ 12</span>
+                  <span className="text-xl font-extrabold text-slate-900 font-mono">{evaluationPercent}%</span>
+                  <span className="text-[11px] text-slate-400">score moyen</span>
                 </div>
-                <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
-                  <div className="bg-emerald-600 h-full rounded-full" style={{ width: '42%' }} />
+                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-emerald-600 h-full rounded-full transition-all duration-300" style={{ width: `${evaluationPercent}%` }} />
                 </div>
               </div>
 
-              {/* Carte 4 : Badge(s) obtenu(s) */}
+              {/* Carte 4 : Maîtrise des compétences */}
               <div className="bg-white rounded-2xl border border-slate-200/90 p-4 shadow-2xs space-y-2">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center">
-                    <Award className="w-3.5 h-3.5" />
+                    <ShieldCheck className="w-3.5 h-3.5" />
                   </div>
-                  <span className="text-xs font-semibold text-slate-500">Badge(s) obtenu(s)</span>
+                  <span className="text-xs font-semibold text-slate-600">Compétences</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xl font-extrabold text-slate-900 font-mono">4</span>
-                  {/* Icônes de badges alignées */}
-                  <div className="flex items-center gap-1">
-                    <span className="w-5 h-5 rounded-md bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-bold">
-                      ★
-                    </span>
-                    <span className="w-5 h-5 rounded-md bg-amber-100 text-amber-700 flex items-center justify-center text-[10px] font-bold">
-                      ★
-                    </span>
-                    <span className="w-5 h-5 rounded-md bg-slate-200 text-slate-700 flex items-center justify-center text-[10px] font-bold">
-                      ★
-                    </span>
-                    <span className="w-5 h-5 rounded-md bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
-                      ★
-                    </span>
-                  </div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-xl font-extrabold text-slate-900 font-mono">{competenciesPercent}%</span>
+                  <span className="text-[11px] text-slate-400">
+                    {activeEnrollment?.validatedCompetencyCodes?.length ?? 0}/{currentPath.competenciesTargeted.length} validées
+                  </span>
+                </div>
+                <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                  <div className="bg-amber-500 h-full rounded-full transition-all duration-300" style={{ width: `${competenciesPercent}%` }} />
                 </div>
               </div>
             </div>
@@ -457,17 +518,13 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
           <div className="bg-white rounded-3xl border border-slate-200/90 shadow-2xs p-4 sm:p-6 space-y-4 sm:space-y-5">
             {/* Header Profil */}
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-600 via-orange-500 to-amber-700 text-white font-bold flex items-center justify-center text-sm overflow-hidden shadow-sm ring-4 ring-slate-100 shrink-0">
-                <img
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&h=200&q=80"
-                  alt={profile.name}
-                  className="w-full h-full object-cover"
-                />
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-700 text-white font-bold flex items-center justify-center text-sm shadow-sm ring-4 ring-slate-100 shrink-0">
+                <span aria-label={profile.name}>{profile.name.split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase()}</span>
               </div>
 
               <div>
                 <h3 className="font-extrabold text-slate-900 text-base leading-tight">
-                  Bonjour Max 👋
+                  Bonjour {profile.name.split(' ')[0]} 👋
                 </h3>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Continuons sur la bonne lancée !
@@ -480,14 +537,14 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-500 font-medium">Niveau actuel</span>
                 <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px]">
-                  68%
+                  {competenciesPercent}%
                 </span>
               </div>
               <div className="text-base font-extrabold text-slate-900">
-                Avancé
+                {profile.experienceLevel === 'avance' ? 'Avancé' : profile.experienceLevel === 'intermediaire' ? 'Intermédiaire' : 'Débutant'}
               </div>
               <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                <div className="bg-[#10B981] h-full rounded-full" style={{ width: '68%' }} />
+                <div className="bg-[#10B981] h-full rounded-full" style={{ width: `${competenciesPercent}%` }} />
               </div>
             </div>
 
@@ -495,26 +552,26 @@ export const FinExpertDashboard: React.FC<FinExpertDashboardProps> = ({
             <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-100">
               <div className="p-2">
                 <div className="text-xs font-bold text-slate-900 flex items-center justify-center gap-1">
-                  <span>🏆</span>
-                  <span className="font-mono text-base font-extrabold">12</span>
+                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="font-mono text-base font-extrabold">{profile.totalXp}</span>
                 </div>
-                <span className="text-[11px] text-slate-400">Badges</span>
+                <span className="text-[11px] text-slate-400">Points XP</span>
               </div>
 
               <div className="p-2 border-x border-slate-100">
                 <div className="text-xs font-bold text-slate-900 flex items-center justify-center gap-1">
-                  <span>🎮</span>
-                  <span className="font-mono text-base font-extrabold">7</span>
+                  <Gamepad2 className="w-3.5 h-3.5 text-orange-500" />
+                  <span className="font-mono text-base font-extrabold">{profile.completedMissions.length}</span>
                 </div>
-                <span className="text-[11px] text-slate-400">Missions</span>
+                <span className="text-[11px] text-slate-400">Missions réussies</span>
               </div>
 
               <div className="p-2">
                 <div className="text-xs font-bold text-slate-900 flex items-center justify-center gap-1">
-                  <span>👥</span>
-                  <span className="font-mono text-base font-extrabold">4</span>
+                  <BookOpen className="w-3.5 h-3.5 text-blue-500" />
+                  <span className="font-mono text-base font-extrabold">{profile.completedLessons.length}</span>
                 </div>
-                <span className="text-[11px] text-slate-400">Jours consécutifs</span>
+                <span className="text-[11px] text-slate-400">Leçons terminées</span>
               </div>
             </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { DIAGNOSTIC_QUESTIONS } from '../../data/diagnosticData';
 import { X, CheckCircle2, AlertCircle, ArrowRight, Award, Compass, RefreshCw } from 'lucide-react';
 
@@ -13,13 +13,22 @@ export const DiagnosticModal: React.FC<DiagnosticModalProps> = ({
   onClose,
   onComplete,
 }) => {
-  if (!isOpen) return null;
-
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null);
   const [showExplanation, setShowExplanation] = useState(false);
   const [answers, setAnswers] = useState<Record<string, { isCorrect: boolean; domain: string }>>({});
   const [isFinished, setIsFinished] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setCurrentIndex(0);
+    setSelectedOptionId(null);
+    setShowExplanation(false);
+    setAnswers({});
+    setIsFinished(false);
+  }, [isOpen]);
+
+  if (!isOpen) return null;
 
   const currentQ = DIAGNOSTIC_QUESTIONS[currentIndex];
 
