@@ -12,6 +12,7 @@ import {
   Sparkles,
   BookOpen,
   X,
+  Sliders,
 } from 'lucide-react';
 
 export type NavigationTab =
@@ -25,7 +26,8 @@ export type NavigationTab =
   | 'progression'
   | 'portfolio'
   | 'tutor'
-  | 'resources';
+  | 'resources'
+  | 'author';
 
 interface SidebarProps {
   activeTab: NavigationTab;
@@ -46,6 +48,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'dashboard', label: 'Accueil', icon: <Home className="w-4 h-4" /> },
     { id: 'courses', label: 'Mes parcours', icon: <GraduationCap className="w-4 h-4" /> },
     { id: 'catalogue', label: 'Catalogue', icon: <Layers className="w-4 h-4" /> },
+    { id: 'author', label: 'Studio Auteur', icon: <Sliders className="w-4 h-4 text-sky-400" />, isNew: true },
     { id: 'simulators', label: 'Simulateurs', icon: <Calculator className="w-4 h-4" /> },
     { id: 'missions', label: 'Jeux & Missions', icon: <Gamepad2 className="w-4 h-4" /> },
     { id: 'excel', label: 'Laboratoire Excel', icon: <FileSpreadsheet className="w-4 h-4 text-emerald-400" /> },

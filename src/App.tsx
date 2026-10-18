@@ -16,6 +16,7 @@ import { SearchModal } from './components/common/SearchModal';
 import { DiagnosticModal } from './components/diagnostic/DiagnosticModal';
 import { GameMissionModal } from './components/game/GameMissionModal';
 import { PedagogicalTutorModal } from './components/common/PedagogicalTutorModal';
+import { AuthorStudio } from './components/author/AuthorStudio';
 import {
   Home,
   GraduationCap,
@@ -156,7 +157,12 @@ export const App: React.FC = () => {
               completedLessonIds={profile.completedLessons}
               onSelectPath={() => setActiveTab('courses')}
               onNavigate={setActiveTab}
+              onOpenDiagnostic={() => setIsDiagnosticOpen(true)}
             />
+          )}
+
+          {activeTab === 'author' && (
+            <AuthorStudio />
           )}
 
           {activeTab === 'simulators' && (
